@@ -1,0 +1,49 @@
+#######################################
+# Syntax Coloring Map for AppleMIDI
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+BLEMIDI	KEYWORD1
+BLEMIDI.h	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+run		             KEYWORD2
+noteOn	         	 KEYWORD2
+noteOff	             KEYWORD2
+afterTouchPoly	     KEYWORD2
+controlChange	     KEYWORD2
+programChange	     KEYWORD2
+afterTouchChannel	KEYWORD2
+pitchBend	         KEYWORD2
+systemExclusive	     KEYWORD2
+timeCodeQuarterFrame	KEYWORD2
+songPosition	     KEYWORD2
+songSelect	         KEYWORD2
+tuneRequest	         KEYWORD2
+clock	             KEYWORD2
+start	             KEYWORD2
+Continue	         KEYWORD2
+stop	             KEYWORD2
+activeSensing	     KEYWORD2
+systemReset	         KEYWORD2
+timeCodeQuarterFrame	         KEYWORD2
+sysEx	         KEYWORD2
+afterTouch	         KEYWORD2
+polyPressure	         KEYWORD2
+tick	         KEYWORD2
+
+#######################################
+# Instances (KEYWORD3)
+#######################################
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+# Namespace, considering it as a literal
+blemidi	LITERAL1
