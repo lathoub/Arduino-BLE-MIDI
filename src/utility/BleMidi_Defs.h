@@ -19,9 +19,9 @@ BEGIN_BLEMIDI_NAMESPACE
     BLEMIDI_NAMESPACE::BleMidiInterface Name;
 
 
-/*! \brief Create an instance of the library with EnternetUDP.
+/*! \brief
 */
 #define BLEMIDI_CREATE_DEFAULT_INSTANCE()                                      \
-    BLEMIDI_CREATE_INSTANCE(BleMIDI);
+    BLEMIDI_CREATE_INSTANCE(bm);
 
 END_BLEMIDI_NAMESPACE

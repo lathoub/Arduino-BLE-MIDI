@@ -1,6 +1,9 @@
+// Select your device
+#define ESP32
+
 #include "BleMidi.h"
 
-BLEMIDI_CREATE_INSTANCE(BLEMIDI);
+BLEMIDI_CREATE_INSTANCE(bm);
 
 // -----------------------------------------------------------------------------
 //
@@ -13,6 +16,11 @@ void setup()
     ; // wait for serial port to connect. Needed for Leonardo only
   }
 
+  bm.begin("hehe");
+
+  bm.onConnected(OnBleMidiConnected);
+  bm.onDisconnected(OnBleMidiDisconnected);
+
   Serial.print(F("Getting IP address..."));
 }
 
@@ -22,4 +30,22 @@ void setup()
 void loop()
 {
 
+}
+
+// ====================================================================================
+// Event handlers for incoming MIDI messages
+// ====================================================================================
+
+// -----------------------------------------------------------------------------
+// rtpMIDI session. Device connected
+// -----------------------------------------------------------------------------
+void OnBleMidiConnected() {
+  Serial.print(F("Connected"));
+}
+
+// -----------------------------------------------------------------------------
+// rtpMIDI session. Device disconnected
+// -----------------------------------------------------------------------------
+void OnBleMidiDisconnected() {
+  Serial.println(F("Disconnected"));
 }
