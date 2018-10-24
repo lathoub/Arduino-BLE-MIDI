@@ -15,6 +15,8 @@ protected:
     BLEAdvertising *pAdvertising;
     BLECharacteristic *pCharacteristic;
     
+    bool _connected;
+    
 public:
     void(*mConnectedCallback)();
     void(*mDisconnectedCallback)();
@@ -31,11 +33,32 @@ public:
     }
     
     inline bool begin(const char* deviceName);
+    
+    inline void noteOn(int note, int velocity, int channel) {
+        
+        if (!_connected) return;
+        if (pCharacteristic == NULL) return;
+
+        uint8_t midiPacket[] = {
+            0x80,  // header
+            0x80,  // timestamp, not implemented
+            0x00,  // status
+            0x3c,  // 0x3c == 60 == middle c
+            0x00   // velocity
+        };
+        
+        midiPacket[2] = note;      // note, channel 0
+        midiPacket[4] = velocity;  // velocity
+        pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes
+        pCharacteristic->notify();
+    }
 
     inline void onConnected(void(*fptr)()) {
+        _connected = true;
         mConnectedCallback = fptr;
     }
     inline void onDisconnected(void(*fptr)()) {
+        _connected = false;
         mDisconnectedCallback = fptr;
     }
 };
