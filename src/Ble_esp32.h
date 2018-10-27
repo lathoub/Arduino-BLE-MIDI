@@ -34,7 +34,7 @@ public:
     
     inline bool begin(const char* deviceName);
     
-    inline void noteOn(int note, int velocity, int channel) {
+    inline void noteOn(DataByte note, DataByte velocity, Channel channel) {
         
         if (!_connected) return;
         if (pCharacteristic == NULL) return;
@@ -51,6 +51,67 @@ public:
         midiPacket[4] = velocity;  // velocity
         pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes
         pCharacteristic->notify();
+    }
+
+    inline void noteOff(DataByte note, DataByte velocity, Channel channel) {
+    }
+    
+    inline void programChange(DataByte inProgramNumber, Channel inChannel) {
+        
+    }
+    inline void controlChange(DataByte inControlNumber, DataByte inControlValue, Channel inChannel) {
+        
+    }
+    inline void pitchBend(int inPitchValue, Channel inChannel) {
+        
+    }
+    inline void pitchBend(double inPitchValue, Channel inChannel) {
+        
+    }
+    inline void polyPressure(DataByte inNoteNumber, DataByte inPressure, Channel inChannel) {
+        
+    }
+    inline void afterTouch(DataByte inPressure, Channel inChannel) {
+        
+    }
+    inline void sysEx(const byte*, uint16_t inLength) {
+        
+    }
+    inline void timeCodeQuarterFrame(DataByte inTypeNibble, DataByte inValuesNibble) {
+        
+    }
+    inline void timeCodeQuarterFrame(DataByte inData) {
+        
+    }
+    inline void songPosition(unsigned short inBeats) {
+        
+    }
+    inline void songSelect(DataByte inSongNumber) {
+        
+    }
+    inline void tuneRequest() {
+        
+    }
+    inline void activeSensing() {
+        
+    }
+    inline void start() {
+        
+    }
+    inline void _continue() {
+        
+    }
+    inline void stop() {
+        
+    }
+    inline void reset() {
+        
+    }
+    inline void clock() {
+        
+    }
+    inline void tick() {
+        
     }
 
     inline void onConnected(void(*fptr)()) {
