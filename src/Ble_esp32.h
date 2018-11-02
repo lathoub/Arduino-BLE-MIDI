@@ -34,7 +34,7 @@ public:
     
     inline bool begin(const char* deviceName);
     
-    inline void noteOn(DataByte note, DataByte velocity, Channel channel) {
+    inline void sendNoteOn(DataByte note, DataByte velocity, Channel channel) {
         
         if (!_connected) return;
         if (pCharacteristic == NULL) return;
@@ -49,68 +49,69 @@ public:
         
         midiPacket[2] = note;      // note, channel 0
         midiPacket[4] = velocity;  // velocity
+        
         pCharacteristic->setValue(midiPacket, 5); // packet, length in bytes
         pCharacteristic->notify();
     }
 
-    inline void noteOff(DataByte note, DataByte velocity, Channel channel) {
+    inline void sendNoteOff(DataByte note, DataByte velocity, Channel channel) {
     }
     
-    inline void programChange(DataByte inProgramNumber, Channel inChannel) {
+    inline void sendProgramChange(DataByte inProgramNumber, Channel inChannel) {
         
     }
-    inline void controlChange(DataByte inControlNumber, DataByte inControlValue, Channel inChannel) {
+    inline void sendControlChange(DataByte inControlNumber, DataByte inControlValue, Channel inChannel) {
         
     }
-    inline void pitchBend(int inPitchValue, Channel inChannel) {
+    inline void sendPitchBend(int inPitchValue, Channel inChannel) {
         
     }
-    inline void pitchBend(double inPitchValue, Channel inChannel) {
+    inline void sendPitchBend(double inPitchValue, Channel inChannel) {
         
     }
-    inline void polyPressure(DataByte inNoteNumber, DataByte inPressure, Channel inChannel) {
+    inline void sendPolyPressure(DataByte inNoteNumber, DataByte inPressure, Channel inChannel) {
         
     }
-    inline void afterTouch(DataByte inPressure, Channel inChannel) {
+    inline void sendAfterTouch(DataByte inPressure, Channel inChannel) {
         
     }
-    inline void sysEx(const byte*, uint16_t inLength) {
+    inline void sendSysEx(const byte*, uint16_t inLength) {
         
     }
-    inline void timeCodeQuarterFrame(DataByte inTypeNibble, DataByte inValuesNibble) {
+    inline void sendTimeCodeQuarterFrame(DataByte inTypeNibble, DataByte inValuesNibble) {
         
     }
-    inline void timeCodeQuarterFrame(DataByte inData) {
+    inline void sendTimeCodeQuarterFrame(DataByte inData) {
         
     }
-    inline void songPosition(unsigned short inBeats) {
+    inline void sendSongPosition(unsigned short inBeats) {
         
     }
-    inline void songSelect(DataByte inSongNumber) {
+    inline void sendSongSelect(DataByte inSongNumber) {
         
     }
-    inline void tuneRequest() {
+    inline void sendTuneRequest() {
         
     }
-    inline void activeSensing() {
+    inline void sendActiveSensing() {
         
     }
-    inline void start() {
+    inline void sendStart() {
         
     }
-    inline void _continue() {
+    inline void sendContinue() {
         
     }
-    inline void stop() {
+    inline void sendStop() {
         
     }
-    inline void reset() {
+    inline void sendReset() {
         
     }
-    inline void clock() {
+    inline void sendClock() {
         
     }
-    inline void tick() {
+    inline void sendTick() {
         
     }
 
