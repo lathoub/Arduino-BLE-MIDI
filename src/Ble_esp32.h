@@ -6,10 +6,11 @@
 #include <BLEServer.h>
 
 #include "utility/MIDI_Defs.h"
+#include "AbstractMidiInterface.h"
 
 BEGIN_BLEMIDI_NAMESPACE
 
-class BleMidiInterface
+class BleMidiInterface : public AbstractMidiInterface
 {
 protected:
     // ESP32
@@ -21,28 +22,8 @@ protected:
     
 public:
     // callbacks
-    void(*mConnectedCallback)();
-    void(*mDisconnectedCallback)();
-    
-    void (*mNoteOffCallback)(byte channel, byte note, byte velocity);
-    void (*mNoteOnCallback)(byte channel, byte note, byte velocity);
-    void (*mAfterTouchPolyCallback)(byte channel, byte note, byte velocity);
-    void (*mControlChangeCallback)(byte channel, byte, byte);
-    void (*mProgramChangeCallback)(byte channel, byte);
-    void (*mAfterTouchChannelCallback)(byte channel, byte);
-    void (*mPitchBendCallback)(byte channel, int);
-    void (*mSongPositionCallback)(unsigned short beats);
-    void (*mSongSelectCallback)(byte songnumber);
-    void (*mTuneRequestCallback)(void);
-    void (*mTimeCodeQuarterFrameCallback)(byte data);
-    void (*mSysExCallback)(const byte* array, uint16_t size);
-    void (*mClockCallback)(void);
-    void (*mStartCallback)(void);
-    void (*mContinueCallback)(void);
-    void (*mStopCallback)(void);
-    void (*mActiveSensingCallback)(void);
-    void (*mResetCallback)(void);
-    // end callback
+    void(*_connectedCallback)() = NULL;
+    void(*_disconnectedCallback)() = NULL;
     
 protected:
     void getMidiTimestamp (uint8_t *header, uint8_t *timestamp)
@@ -150,27 +131,6 @@ protected:
 public:
     BleMidiInterface()
     {
-        mConnectedCallback = NULL;
-        mDisconnectedCallback = NULL;
-        
-        mNoteOffCallback = NULL;
-        mNoteOnCallback  = NULL;
-        mAfterTouchPolyCallback = NULL;
-        mControlChangeCallback = NULL;
-        mProgramChangeCallback = NULL;
-        mAfterTouchChannelCallback = NULL;
-        mPitchBendCallback = NULL;
-        mSysExCallback = NULL;
-        mTimeCodeQuarterFrameCallback = NULL;
-        mSongPositionCallback = NULL;
-        mSongSelectCallback = NULL;
-        mTuneRequestCallback = NULL;
-        mClockCallback = NULL;
-        mStartCallback = NULL;
-        mContinueCallback = NULL;
-        mStopCallback = NULL;
-        mActiveSensingCallback = NULL;
-        mResetCallback = NULL;
     }
     
      ~BleMidiInterface()
@@ -181,148 +141,17 @@ public:
     
     inline void receive(uint8_t *buffer, uint8_t bufferSize);
     
-    void sendNoteOn(DataByte note, DataByte velocity, Channel channel) {
-        sendChannelMessage2(Type::NoteOn, channel, note, velocity);
-    }
-
-    void sendNoteOff(DataByte note, DataByte velocity, Channel channel) {
-        sendChannelMessage2(Type::NoteOff, channel, note, velocity);
-    }
-    
-    void sendProgramChange(DataByte number, Channel channel) {
-        sendChannelMessage1(Type::ProgramChange, channel, number);
-    }
-    
-    void sendControlChange(DataByte number, DataByte value, Channel channel) {
-        sendChannelMessage2(Type::ControlChange, channel, number, value);
-    }
-    
-    void sendPitchBend(int value, Channel channel) {
-        sendChannelMessage1(Type::PitchBend, channel, value);
-    }
-    
-    void sendPitchBend(double pitchValue, Channel channel) {
-      //  sendChannelMessage1(Type::PitchBend, channel, bend);
-    }
-    
-    void sendPolyPressure(DataByte noteNumber, DataByte pressure, Channel channel) {
-    }
-    
-    void sendAfterTouch(DataByte pressure, Channel channel) {
-    }
-    
-    void sendSysEx(const byte*, uint16_t inLength) {
-    }
-    
-    void sendTimeCodeQuarterFrame(DataByte typeNibble, DataByte valuesNibble) {
-    }
-    
-    void sendTimeCodeQuarterFrame(DataByte data) {
-        sendSystemCommonMessage1(Type::TimeCodeQuarterFrame, data);
-    }
-    
-    void sendSongPosition(unsigned short beats) {
-        sendSystemCommonMessage2(Type::SongPosition, beats >> 4, beats & 0x0f);
-    }
-    
-    void sendSongSelect(DataByte number) {
-        sendSystemCommonMessage1(Type::SongSelect, number);
-    }
-    
-    void sendTuneRequest() {
-        sendRealTimeMessage(Type::TuneRequest);
-    }
-    
-    void sendActiveSensing() {
-        sendRealTimeMessage(Type::ActiveSensing);
-    }
-    
-    void sendStart() {
-        sendRealTimeMessage(Type::Start);
-    }
-    
-    void sendContinue() {
-        sendRealTimeMessage(Type::Continue);
-    }
-    
-    void sendStop() {
-        sendRealTimeMessage(Type::Stop);
-    }
-    
-    void sendReset() {
-        sendRealTimeMessage(Type::Reset);
-    }
-    
-    void sendClock() {
-        sendRealTimeMessage(Type::Clock);
-    }
-    
-    void sendTick() {
-        sendRealTimeMessage(Type::Tick);
-    }
-
     void onConnected(void(*fptr)()) {
         _connected = true;
-        mConnectedCallback = fptr;
+        _connectedCallback = fptr;
     }
     void onDisconnected(void(*fptr)()) {
         _connected = false;
-        mDisconnectedCallback = fptr;
+        _disconnectedCallback = fptr;
     }
-    
-     void OnReceiveNoteOn(void (*fptr)(byte channel, byte note, byte velocity)){
-        mNoteOnCallback = fptr;
-    }
-     void OnReceiveNoteOff(void (*fptr)(byte channel, byte note, byte velocity)){
-        mNoteOffCallback = fptr;
-    }
-     void OnReceiveAfterTouchPoly(void (*fptr)(byte channel, byte note, byte pressure)){
-        mAfterTouchPolyCallback = fptr;
-    }
-     void OnReceiveControlChange(void (*fptr)(byte channel, byte number, byte value)){
-        mControlChangeCallback = fptr;
-    }
-     void OnReceiveProgramChange(void (*fptr)(byte channel, byte number)){
-        mProgramChangeCallback = fptr;
-    }
-     void OnReceiveAfterTouchChannel(void (*fptr)(byte channel, byte pressure)){
-        mAfterTouchChannelCallback = fptr;
-    }
-     void OnReceivePitchBend(void (*fptr)(byte channel, int bend)){
-        mPitchBendCallback = fptr;
-    }
-     void OnReceiveSysEx(void (*fptr)(const byte * data, uint16_t size)){
-        mSysExCallback = fptr;
-    }
-     void OnReceiveTimeCodeQuarterFrame(void (*fptr)(byte data)){
-        mTimeCodeQuarterFrameCallback = fptr;
-    }
-     void OnReceiveSongPosition(void (*fptr)(unsigned short beats)){
-        mSongPositionCallback = fptr;
-    }
-     void OnReceiveSongSelect(void (*fptr)(byte songnumber)){
-        mSongSelectCallback = fptr;
-    }
-     void OnReceiveTuneRequest(void (*fptr)(void)){
-        mTuneRequestCallback = fptr;
-    }
-     void OnReceiveClock(void (*fptr)(void)){
-        mClockCallback = fptr;
-    }
-     void OnReceiveStart(void (*fptr)(void)){
-        mStartCallback = fptr;
-    }
-     void OnReceiveContinue(void (*fptr)(void)){
-        mContinueCallback = fptr;
-    }
-     void OnReceiveStop(void (*fptr)(void)){
-        mStopCallback = fptr;
-    }
-     void OnReceiveActiveSensing(void (*fptr)(void)){
-        mActiveSensingCallback = fptr;
-    }
-     void OnReceiveReset(void (*fptr)(void)){
-        mResetCallback = fptr;
+
+    void send(Type type, DataByte data1, DataByte data2, Channel channel) {
+        
     }
 
 };
@@ -336,13 +165,13 @@ protected:
     BleMidiInterface* _bleMidiInterface;
 
     void onConnect(BLEServer* pServer) {
-        if (_bleMidiInterface->mConnectedCallback)
-            _bleMidiInterface->mConnectedCallback();
+        if (_bleMidiInterface->_connectedCallback)
+            _bleMidiInterface->_connectedCallback();
     };
     
     void onDisconnect(BLEServer* pServer) {
-        if (_bleMidiInterface->mDisconnectedCallback)
-            _bleMidiInterface->mDisconnectedCallback();
+        if (_bleMidiInterface->_disconnectedCallback)
+            _bleMidiInterface->_disconnectedCallback();
     }
 };
 
@@ -464,8 +293,8 @@ void BleMidiInterface::receive(uint8_t *buffer, uint8_t bufferSize)
 
             // TODO: switch for type
             
-            if (mNoteOnCallback)
-                mNoteOnCallback(0, 1, 2);
+            if (_noteOnCallback)
+                _noteOnCallback(0, 1, 2);
 
             //        MIDI.send(command, buffer[lPtr + 1], buffer[lPtr + 2], channel);
         } else {
