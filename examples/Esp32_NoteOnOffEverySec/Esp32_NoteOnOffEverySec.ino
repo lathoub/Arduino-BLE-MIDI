@@ -21,7 +21,10 @@ void setup()
   bm.onConnected(OnBleMidiConnected);
   bm.onDisconnected(OnBleMidiDisconnected);
 
-  Serial.print(F("Getting IP address..."));
+  bm.OnReceiveNoteOn(OnBleMidiNoteOn);
+
+
+  Serial.println(F("looping"));
 }
 
 // -----------------------------------------------------------------------------
@@ -41,7 +44,7 @@ void loop()
 // rtpMIDI session. Device connected
 // -----------------------------------------------------------------------------
 void OnBleMidiConnected() {
-  Serial.print(F("Connected"));
+  Serial.println(F("Connected"));
 }
 
 // -----------------------------------------------------------------------------
@@ -49,4 +52,17 @@ void OnBleMidiConnected() {
 // -----------------------------------------------------------------------------
 void OnBleMidiDisconnected() {
   Serial.println(F("Disconnected"));
+}
+
+// -----------------------------------------------------------------------------
+// rtpMIDI session. Device disconnected
+// -----------------------------------------------------------------------------
+void OnBleMidiNoteOn(byte channel, byte note, byte velocity) {
+  Serial.print(F("Incoming NoteOn from channel:"));
+  Serial.print(channel);
+  Serial.print(F(" note:"));
+  Serial.print(note);
+  Serial.print(F(" velocity:"));
+  Serial.print(velocity);
+  Serial.println();
 }

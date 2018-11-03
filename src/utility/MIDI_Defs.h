@@ -162,4 +162,47 @@
         PolyModeOn                  = 127
     };
 
+    /*! \brief Extract an enumerated MIDI type from a status byte
+     */
+    static Type getTypeFromStatusByte(byte status)
+    {
+        if ((status  < 0x80) ||
+            (status == 0xf4) ||
+            (status == 0xf5) ||
+            (status == 0xf9) ||
+            (status == 0xfD))
+        {
+            // Data bytes and undefined.
+            return InvalidType;
+        }
+        if (status < 0xf0)
+        {
+            // Channel message, remove channel nibble.
+            return Type(status & 0xf0);
+        }
+        
+        return Type(status);
+    }
+
+    /*! \brief Returns channel in the range 1-16
+     */
+    static Channel getChannelFromStatusByte(byte status)
+    {
+        return Channel((status & 0x0f) + 1);
+    }
+
+    /*! \brief check if channel is in the range 1-16
+     */
+    static bool isChannelMessage(Type type)
+    {
+        return (type == NoteOff           ||
+                type == NoteOn            ||
+                type == ControlChange     ||
+                type == AfterTouchPoly    ||
+                type == AfterTouchChannel ||
+                type == PitchBend         ||
+                type == ProgramChange);
+    }
+
+
 //}
