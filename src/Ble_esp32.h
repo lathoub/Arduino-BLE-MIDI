@@ -5,8 +5,8 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 
-#include "utility/MIDI_Defs.h"
 #include "AbstractMidiInterface.h"
+using namespace Midi;
 
 BEGIN_BLEMIDI_NAMESPACE
 

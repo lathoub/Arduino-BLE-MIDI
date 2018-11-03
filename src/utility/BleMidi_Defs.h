@@ -9,8 +9,6 @@
 	typedef uint8_t byte;
 #endif
 
-#include "MIDI_Defs.h"
-
 BEGIN_BLEMIDI_NAMESPACE
 
 /*! \brief Create an instance of the library
