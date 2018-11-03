@@ -401,7 +401,7 @@ public:
     }
     
 protected:
-    //
+    // this method needs to be overwritten to add the specific Serial, BLE or AppleMIDI serializers
     virtual void send(Type type, DataByte data1, DataByte data2, Channel channel) = 0;
 };
 
