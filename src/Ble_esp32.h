@@ -85,7 +85,7 @@ protected:
          and the MSB of both bytes are set to indicate that this is a header byte.
          Both bytes are placed into the first two position of an array in preparation for a MIDI message.
          */
-        unsigned long currentTimeStamp = millis() & 0x01FFF;
+        auto currentTimeStamp = millis() & 0x01FFF;
         
         *header = ((currentTimeStamp >> 7) & 0x3F) | 0x80;        // 6 bits plus MSB
         *timestamp = (currentTimeStamp & 0x7F) | 0x80;            // 7 bits plus MSB
@@ -370,7 +370,7 @@ bool BleMidiInterface::begin(const char* deviceName)
     pServer->setCallbacks(new MyServerCallbacks(this));
     
     // Create the BLE Service
-    BLEService* pService = pServer->createService(BLEUUID(SERVICE_UUID));
+    auto pService = pServer->createService(BLEUUID(SERVICE_UUID));
     
     // Create a BLE Characteristic
     pCharacteristic = pService->createCharacteristic(
@@ -384,7 +384,7 @@ bool BleMidiInterface::begin(const char* deviceName)
     // Start the service
     pService->start();
     
-    BLEAdvertisementData advertisementData = BLEAdvertisementData();
+    auto advertisementData = BLEAdvertisementData();
     advertisementData.setFlags(0x04);
     advertisementData.setCompleteServices(BLEUUID(SERVICE_UUID));
     advertisementData.setName(deviceName);
@@ -440,7 +440,7 @@ void BleMidiInterface::receive(uint8_t *buffer, uint8_t bufferSize)
     //While statement contains incrementing pointers and breaks when buffer size exceeded.
     while (1) {
         //lastStatus used to capture runningStatus
-        uint8_t lastStatus = buffer[lPtr];
+        auto lastStatus = buffer[lPtr];
         if ( (buffer[lPtr] < 0x80) ) {
             //Status message not present, bail
             return;
