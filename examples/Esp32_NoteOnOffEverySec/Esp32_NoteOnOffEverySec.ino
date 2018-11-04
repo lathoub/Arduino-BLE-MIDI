@@ -21,7 +21,7 @@ void setup()
   bm.onConnected(OnBleMidiConnected);
   bm.onDisconnected(OnBleMidiDisconnected);
 
-  bm.OnReceiveNoteOn(OnBleMidiNoteOn);
+  bm.setHandleNoteOn(OnBleMidiNoteOn);
 
 
   Serial.println(F("looping"));

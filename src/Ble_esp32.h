@@ -150,7 +150,8 @@ public:
         _disconnectedCallback = fptr;
     }
 
-    void send(Type type, DataByte data1, DataByte data2, Channel channel) {
+    //
+    void send(MidiType type, DataByte data1, DataByte data2, Channel channel) {
         
     }
 
@@ -259,7 +260,7 @@ void BleMidiInterface::receive(uint8_t *buffer, uint8_t bufferSize)
      from other messages – except for System Exclusive messages.
      */
     Channel channel;
-    Type    command;
+    MidiType command;
     
     //Pointers used to search through payload.
     uint8_t lPtr = 0;

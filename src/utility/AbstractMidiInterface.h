@@ -5,9 +5,6 @@
 #pragma once
 
 namespace Midi {
-
-#define MIDI_CHANNEL_OMNI       0
-#define MIDI_CHANNEL_OFF        17 // and over
     
 #define MIDI_PITCHBEND_MIN      -8192
 #define MIDI_PITCHBEND_MAX      8191
@@ -32,6 +29,7 @@ namespace Midi {
 #define MIDI_STATUS_PITCH_WHEEL_CHANGE 0xe0
     
 // MIDI Channel enumeration values
+#define MIDI_CHANNEL_OMNI 0x0
 #define MIDI_CHANNEL_1 0x0
 #define MIDI_CHANNEL_2 0x1
 #define MIDI_CHANNEL_3 0x2
@@ -50,7 +48,8 @@ namespace Midi {
 #define MIDI_CHANNEL_16 0xf
 #define MIDI_CHANNEL_BASE 0x10
 #define MIDI_CHANNEL_ALL 0x1f
-    
+#define MIDI_CHANNEL_OFF 0x1f
+
 #define MIDI_LSB( v ) (v) & 0x7F
 #define MIDI_MSB( v ) ((v)>> 7)  & 0x7F
     
@@ -69,7 +68,7 @@ typedef byte MIDI_VELOCITY;
 typedef byte MIDI_PRESSURE;
 
 /*! Enumeration of MIDI types */
-enum Type
+enum class MidiType
 {
     InvalidType           = 0x00,    ///< For notifying errors
     NoteOff               = 0x80,    ///< Note Off
@@ -79,9 +78,9 @@ enum Type
     ProgramChange         = 0xC0,    ///< Program Change
     AfterTouchChannel     = 0xD0,    ///< Channel (monophonic) AfterTouch
     PitchBend             = 0xE0,    ///< Pitch Bend
-    SysEx                 = 0xF0,    ///< System Exclusive
-    SysExStart            = SysEx,   ///< System Exclusive Start
-    SysExEnd              = 0xF7,    ///< System Exclusive End
+    SystemExclusive       = 0xF0,    ///< System Exclusive
+    SystemExclusiveStart  = SystemExclusive,
+    SystemExclusiveEnd    = 0xF7,    ///< System Exclusive End
     TimeCodeQuarterFrame  = 0xF1,    ///< System Common - MIDI Time Code Quarter Frame
     SongPosition          = 0xF2,    ///< System Common - Song Position Pointer
     SongSelect            = 0xF3,    ///< System Common - Song Select
@@ -92,7 +91,7 @@ enum Type
     Continue              = 0xFB,    ///< System Real Time - Continue
     Stop                  = 0xFC,    ///< System Real Time - Stop
     ActiveSensing         = 0xFE,    ///< System Real Time - Active Sensing
-    Reset                 = 0xFF,    ///< System Real Time - System Reset
+    SystemReset           = 0xFF,    ///< System Real Time - System Reset
 };
 
 /*! Enumeration of Thru filter modes */
@@ -111,7 +110,7 @@ struct Thru
  See the detailed controllers numbers & description here:
  http://www.somascape.org/midi/tech/spec.html#ctrlnums
  */
-enum ControlChangeNumber
+enum class MidiControlChangeNumber
 {
     // High resolution Continuous Controllers MSB (+32 for LSB) ----------------
     BankSelect                  = 0,
@@ -193,7 +192,7 @@ struct RPN
 
 /*! \brief Extract an enumerated MIDI type from a status byte
  */
-static Type getTypeFromStatusByte(byte status)
+static MidiType getTypeFromStatusByte(byte status)
 {
     if ((status  < 0x80) ||
         (status == 0xf4) ||
@@ -202,15 +201,15 @@ static Type getTypeFromStatusByte(byte status)
         (status == 0xfD))
     {
         // Data bytes and undefined.
-        return InvalidType;
+        return MidiType::InvalidType;
     }
     if (status < 0xf0)
     {
         // Channel message, remove channel nibble.
-        return Type(status & 0xf0);
+        return MidiType(status & 0xf0);
     }
     
-    return Type(status);
+    return MidiType(status);
 }
 
 /*! \brief Returns channel in the range 1-16
@@ -222,15 +221,15 @@ static Channel getChannelFromStatusByte(byte status)
 
 /*! \brief check if channel is in the range 1-16
  */
-static bool isChannelMessage(Type type)
+static bool isChannelMessage(MidiType type)
 {
-    return (type == NoteOff           ||
-            type == NoteOn            ||
-            type == ControlChange     ||
-            type == AfterTouchPoly    ||
-            type == AfterTouchChannel ||
-            type == PitchBend         ||
-            type == ProgramChange);
+    return (type == MidiType::NoteOff           ||
+            type == MidiType::NoteOn            ||
+            type == MidiType::ControlChange     ||
+            type == MidiType::AfterTouchPoly    ||
+            type == MidiType::AfterTouchChannel ||
+            type == MidiType::PitchBend         ||
+            type == MidiType::ProgramChange);
 }
 
 class AbstractMidiInterface
@@ -267,24 +266,24 @@ protected:
 public:
     // sending
     void sendNoteOn(DataByte note, DataByte velocity, Channel channel) {
-        send(Type::NoteOn, channel, note, velocity);
+        send(MidiType::NoteOn, channel, note, velocity);
     }
     
     void sendNoteOff(DataByte note, DataByte velocity, Channel channel) {
-        send(Type::NoteOff, channel, note, velocity);
+        send(MidiType::NoteOff, channel, note, velocity);
     }
     
     void sendProgramChange(DataByte number, Channel channel) {
-        send(Type::ProgramChange, number, 0, channel);
+        send(MidiType::ProgramChange, number, 0, channel);
    }
     
     void sendControlChange(DataByte number, DataByte value, Channel channel) {
-        send(Type::ControlChange, number, value, channel);
+        send(MidiType::ControlChange, number, value, channel);
    }
     
     void sendPitchBend(int value, Channel channel) {
         const unsigned bend = unsigned(value - int(MIDI_PITCHBEND_MIN));
-        send(Type::PitchBend, (bend & 0x7f), (bend >> 7) & 0x7f, channel);
+        send(MidiType::PitchBend, (bend & 0x7f), (bend >> 7) & 0x7f, channel);
     }
     
     void sendPitchBend(double pitchValue, Channel channel) {
@@ -294,15 +293,15 @@ public:
     }
     
     void sendPolyPressure(DataByte note, DataByte pressure, Channel channel) {
-        send(Type::AfterTouchPoly, note, pressure, channel);
+        send(MidiType::AfterTouchPoly, note, pressure, channel);
     }
     
     void sendAfterTouch(DataByte pressure, Channel channel) {
-        send(Type::AfterTouchChannel, pressure, 0, channel);
+        send(MidiType::AfterTouchChannel, pressure, 0, channel);
     }
     
     void sendAfterTouch(DataByte note, DataByte pressure, Channel channel) {
-        send(Type::AfterTouchChannel, note, pressure, channel);
+        send(MidiType::AfterTouchChannel, note, pressure, channel);
     }
     
     void sendSysEx(const byte*, uint16_t inLength) {
@@ -345,64 +344,64 @@ public:
     }
 
     //receiving
-    void OnReceiveNoteOn(void (*fptr)(byte channel, byte note, byte velocity)) {
+    void setHandleNoteOn(void (*fptr)(byte channel, byte note, byte velocity)) {
         _noteOnCallback = fptr;
     }
-    void OnReceiveNoteOff(void (*fptr)(byte channel, byte note, byte velocity)) {
+    void setHandleNoteOff(void (*fptr)(byte channel, byte note, byte velocity)) {
         _noteOffCallback = fptr;
     }
-    void OnReceiveAfterTouchPoly(void (*fptr)(byte channel, byte note, byte pressure)) {
+    void setHandleAfterTouchPoly(void (*fptr)(byte channel, byte note, byte pressure)) {
         _afterTouchPolyCallback = fptr;
     }
-    void OnReceiveControlChange(void (*fptr)(byte channel, byte number, byte value)) {
+    void setHandleControlChange(void (*fptr)(byte channel, byte number, byte value)) {
         _controlChangeCallback = fptr;
     }
-    void OnReceiveProgramChange(void (*fptr)(byte channel, byte number)) {
+    void setHandleProgramChange(void (*fptr)(byte channel, byte number)) {
         _programChangeCallback = fptr;
     }
-    void OnReceiveAfterTouchChannel(void (*fptr)(byte channel, byte pressure)) {
+    void setHandleAfterTouchChannel(void (*fptr)(byte channel, byte pressure)) {
         _afterTouchChannelCallback = fptr;
     }
-    void OnReceivePitchBend(void (*fptr)(byte channel, int bend)) {
+    void setHandlePitchBend(void (*fptr)(byte channel, int bend)) {
         _pitchBendCallback = fptr;
     }
-    void OnReceiveSysEx(void (*fptr)(const byte * data, uint16_t size)) {
+    void setHandleSysEx(void (*fptr)(const byte * data, uint16_t size)) {
         _sysExCallback = fptr;
     }
-    void OnReceiveTimeCodeQuarterFrame(void (*fptr)(byte data)) {
+    void setHandleTimeCodeQuarterFrame(void (*fptr)(byte data)) {
         _timeCodeQuarterFrameCallback = fptr;
     }
-    void OnReceiveSongPosition(void (*fptr)(unsigned short beats)) {
+    void setHandleSongPosition(void (*fptr)(unsigned short beats)) {
         _songPositionCallback = fptr;
     }
-    void OnReceiveSongSelect(void (*fptr)(byte songnumber)) {
+    void setHandleSongSelect(void (*fptr)(byte songnumber)) {
         _songSelectCallback = fptr;
     }
-    void OnReceiveTuneRequest(void (*fptr)(void)) {
+    void setHandleTuneRequest(void (*fptr)(void)) {
         _tuneRequestCallback = fptr;
     }
-    void OnReceiveClock(void (*fptr)(void)) {
+    void setHandleClock(void (*fptr)(void)) {
         _clockCallback = fptr;
     }
-    void OnReceiveStart(void (*fptr)(void)) {
+    void setHandleStart(void (*fptr)(void)) {
         _startCallback = fptr;
     }
-    void OnReceiveContinue(void (*fptr)(void)) {
+    void setHandleContinue(void (*fptr)(void)) {
         _continueCallback = fptr;
     }
-    void OnReceiveStop(void (*fptr)(void)) {
+    void setHandleStop(void (*fptr)(void)) {
         _stopCallback = fptr;
     }
-    void OnReceiveActiveSensing(void (*fptr)(void)) {
+    void setHandleActiveSensing(void (*fptr)(void)) {
         _activeSensingCallback = fptr;
     }
-    void OnReceiveReset(void (*fptr)(void)) {
+    void setHandleReset(void (*fptr)(void)) {
         _resetCallback = fptr;
     }
     
 protected:
     // this method needs to be overwritten to add the specific Serial, BLE or AppleMIDI serializers
-    virtual void send(Type type, DataByte data1, DataByte data2, Channel channel) = 0;
+    virtual void send(MidiType type, DataByte data1, DataByte data2, Channel channel) = 0;
 };
 
 }
