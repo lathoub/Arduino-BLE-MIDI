@@ -68,7 +68,7 @@ typedef byte MIDI_VELOCITY;
 typedef byte MIDI_PRESSURE;
 
 /*! Enumeration of MIDI types */
-enum class MidiType
+enum MidiType : uint8_t
 {
     InvalidType           = 0x00,    ///< For notifying errors
     NoteOff               = 0x80,    ///< Note Off
@@ -110,7 +110,7 @@ struct Thru
  See the detailed controllers numbers & description here:
  http://www.somascape.org/midi/tech/spec.html#ctrlnums
  */
-enum class MidiControlChangeNumber
+enum MidiControlChangeNumber : uint8_t
 {
     // High resolution Continuous Controllers MSB (+32 for LSB) ----------------
     BankSelect                  = 0,
@@ -210,6 +210,13 @@ static MidiType getTypeFromStatusByte(byte status)
     }
     
     return MidiType(status);
+}
+
+/*! \brief Returns type + channel
+ */
+static StatusByte getStatus(MidiType type, Channel channel)
+{
+    return ( type & 0xf0) | ((channel - 1) & 0x0f);
 }
 
 /*! \brief Returns channel in the range 1-16
@@ -400,8 +407,57 @@ public:
     }
     
 protected:
-    // this method needs to be overwritten to add the specific Serial, BLE or AppleMIDI serializers
-    virtual void send(MidiType type, DataByte data1, DataByte data2, Channel channel) = 0;
+    // Channel messages
+    virtual void send(MidiType type, DataByte data1, DataByte data2, Channel channel)
+    {
+        // Then test if channel is valid
+        if (channel >= MIDI_CHANNEL_OFF  ||
+            channel == MIDI_CHANNEL_OMNI ||
+            type < 0x80)
+        {
+            return; // Don't send anything
+        }
+        
+        if (type <= MidiType::PitchBend)  // Channel messages
+        {
+            // Protection: remove MSBs on data
+            data1 &= 0x7f;
+            data2 &= 0x7f;
+            
+            const StatusByte status = getStatus(type, channel);
+
+            if (type != MidiType::ProgramChange && type != MidiType::AfterTouchChannel)
+            {
+                serialize(status, data1, data2);
+            }
+            else
+            {
+                serialize(status, data1);
+            }
+        }
+        else if (type >= MidiType::Clock && type <= MidiType::SystemReset)
+        {
+            serialize(type); // System Real-time and 1 byte.
+        }
+    }
+    
+    // SystemCommon message
+    virtual void send(MidiType type, DataByte data1, DataByte data2)
+    {
+        
+    }
+    
+    // realTime
+    virtual void send(MidiType type)
+    {
+        
+    }
+    
+    virtual void serialize(DataByte) = 0;
+    virtual void serialize(DataByte, DataByte) = 0;
+    virtual void serialize(DataByte, DataByte, DataByte) = 0;
+
+protected:
 };
 
 }

@@ -5,7 +5,7 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 
-#include "AbstractMidiInterface.h"
+#include "utility/AbstractMidiInterface.h"
 using namespace Midi;
 
 BEGIN_BLEMIDI_NAMESPACE
@@ -19,6 +19,8 @@ protected:
     BLECharacteristic *pCharacteristic;
     
     bool _connected;
+    
+    uint8_t _midiPacket[5];
     
 public:
     // callbacks
@@ -72,61 +74,45 @@ protected:
         *timestamp = (currentTimeStamp & 0x7F) | 0x80;            // 7 bits plus MSB
     }
     
-    void sendChannelMessage1(byte type, byte channel, byte data1)
+    void serialize(DataByte b1)
     {
-        uint8_t midiPacket[4];
+        getMidiTimestamp(&_midiPacket[0], &_midiPacket[1]);
+ 
+        _midiPacket[2] = b1;
+
+        // TODO: quid running status
         
-        getMidiTimestamp(&midiPacket[0], &midiPacket[1]);
-        midiPacket[2] = (type & 0xf0) | ((channel - 1) & 0x0f);
-        midiPacket[3] = data1;
-        pCharacteristic->setValue(midiPacket, 4);
+        pCharacteristic->setValue(_midiPacket, 3);
         pCharacteristic->notify();
-    }
+    };
     
-    void sendChannelMessage2(byte type, byte channel, byte data1, byte data2)
+    void serialize(DataByte b1, DataByte b2)
     {
-        uint8_t midiPacket[5];
-        
-        getMidiTimestamp(&midiPacket[0], &midiPacket[1]);
-        midiPacket[2] = (type & 0xf0) | ((channel - 1) & 0x0f);
-        midiPacket[3] = data1;
-        midiPacket[4] = data2;
-        pCharacteristic->setValue(midiPacket, 5);
+        getMidiTimestamp(&_midiPacket[0], &_midiPacket[1]);
+
+        _midiPacket[2] = b1;
+        _midiPacket[3] = b2;
+
+        // TODO: quid running status
+
+        pCharacteristic->setValue(_midiPacket, 4);
         pCharacteristic->notify();
-    }
+    };
     
-    void sendSystemCommonMessage1(byte type, byte data1)
+    void serialize(DataByte b1, DataByte b2, DataByte b3)
     {
-        uint8_t midiPacket[4];
+        getMidiTimestamp(&_midiPacket[0], &_midiPacket[1]);
         
-        getMidiTimestamp(&midiPacket[0], &midiPacket[1]);
-        midiPacket[2] = type;
-        midiPacket[3] = data1;
-        pCharacteristic->setValue(midiPacket, 4);
+        _midiPacket[2] = b1;
+        _midiPacket[3] = b2;
+        _midiPacket[4] = b3;
+
+        // TODO: quid running status
+
+        pCharacteristic->setValue(_midiPacket, 5);
         pCharacteristic->notify();
-    }
-    
-    void sendSystemCommonMessage2(byte type, byte data1, byte data2)
-    {
-        uint8_t midiPacket[5];
-        
-        getMidiTimestamp(&midiPacket[0], &midiPacket[1]);
-        midiPacket[2] = type;
-        midiPacket[3] = data1;
-        midiPacket[4] = data2;
-        pCharacteristic->setValue(midiPacket, 5);
-        pCharacteristic->notify();
-    }
-    
-    void sendRealTimeMessage(byte type)
-    {
-        uint8_t midiPacket[3];
-        
-        getMidiTimestamp(&midiPacket[0], &midiPacket[1]);
-        midiPacket[2] = type;
-        pCharacteristic->setValue(midiPacket, 3);
-        pCharacteristic->notify();
-    }
+   };
+
 
 public:
     BleMidiInterface()
@@ -149,12 +135,7 @@ public:
         _connected = false;
         _disconnectedCallback = fptr;
     }
-
-    //
-    void send(MidiType type, DataByte data1, DataByte data2, Channel channel) {
-        
-    }
-
+    
 };
 
 class MyServerCallbacks: public BLEServerCallbacks {
