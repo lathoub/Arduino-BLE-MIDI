@@ -19,7 +19,7 @@ void setup()
   bm.onDisconnected(OnBleMidiDisconnected);
 
   bm.setHandleNoteOn(OnBleMidiNoteOn);
-
+  bm.setHandleNoteOff(OnBleMidiNoteOff);
 
   Serial.println(F("looping"));
 }
@@ -29,7 +29,9 @@ void setup()
 // -----------------------------------------------------------------------------
 void loop()
 {
-  bm.sendNoteOn(60, 127, 0);
+  bm.read();
+
+  //bm.sendNoteOn(60, 127, 0);
   delay(1000);
 }
 
@@ -52,10 +54,24 @@ void OnBleMidiDisconnected() {
 }
 
 // -----------------------------------------------------------------------------
-// rtpMIDI session. Device disconnected
+// received note on
 // -----------------------------------------------------------------------------
 void OnBleMidiNoteOn(byte channel, byte note, byte velocity) {
   Serial.print(F("Incoming NoteOn from channel:"));
+  Serial.print(channel);
+  Serial.print(F(" note:"));
+  Serial.print(note);
+  Serial.print(F(" velocity:"));
+  Serial.print(velocity);
+  Serial.println();
+}
+
+
+// -----------------------------------------------------------------------------
+// received note off
+// -----------------------------------------------------------------------------
+void OnBleMidiNoteOff(byte channel, byte note, byte velocity) {
+  Serial.print(F("Incoming NoteOff from channel:"));
   Serial.print(channel);
   Serial.print(F(" note:"));
   Serial.print(note);
