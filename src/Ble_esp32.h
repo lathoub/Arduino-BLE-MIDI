@@ -130,7 +130,7 @@ public:
     
     inline bool begin(const char* deviceName);
     
-    inline void run()
+    inline void read()
     {
         // n/a, data comes in async (see onWrite callbacks)
     }
