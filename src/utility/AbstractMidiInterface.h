@@ -71,6 +71,7 @@ typedef byte MIDI_PRESSURE;
 enum MidiType : uint8_t
 {
     InvalidType           = 0x00,    ///< For notifying errors
+    
     NoteOff               = 0x80,    ///< Note Off
     NoteOn                = 0x90,    ///< Note On
     AfterTouchPoly        = 0xA0,    ///< Polyphonic AfterTouch
@@ -78,13 +79,16 @@ enum MidiType : uint8_t
     ProgramChange         = 0xC0,    ///< Program Change
     AfterTouchChannel     = 0xD0,    ///< Channel (monophonic) AfterTouch
     PitchBend             = 0xE0,    ///< Pitch Bend
+    
     SystemExclusive       = 0xF0,    ///< System Exclusive
     SystemExclusiveStart  = SystemExclusive,
     SystemExclusiveEnd    = 0xF7,    ///< System Exclusive End
+    
     TimeCodeQuarterFrame  = 0xF1,    ///< System Common - MIDI Time Code Quarter Frame
     SongPosition          = 0xF2,    ///< System Common - Song Position Pointer
     SongSelect            = 0xF3,    ///< System Common - Song Select
     TuneRequest           = 0xF6,    ///< System Common - Tune Request
+    
     Clock                 = 0xF8,    ///< System Real Time - Timing Clock
     Tick                  = 0xF9,    ///< System Real Time - Tick
     Start                 = 0xFA,    ///< System Real Time - Start
@@ -311,44 +315,61 @@ public:
         send(MidiType::AfterTouchChannel, note, pressure, channel);
     }
     
+    
     void sendSysEx(const byte*, uint16_t inLength) {
+        // TODO
     }
     
+    
     void sendTimeCodeQuarterFrame(DataByte typeNibble, DataByte valuesNibble) {
+        // TODO f(typeNibble, valuesNibble);
+        send(MidiType::TimeCodeQuarterFrame);
     }
     
     void sendTimeCodeQuarterFrame(DataByte data) {
+        send(MidiType::TimeCodeQuarterFrame, data);
     }
     
     void sendSongPosition(unsigned short beats) {
+        send(MidiType::SongPosition, beats);
     }
     
     void sendSongSelect(DataByte number) {
+        send(MidiType::SongSelect, number);
     }
     
     void sendTuneRequest() {
+        send(MidiType::TuneRequest);
     }
     
     void sendActiveSensing() {
-    }
+        send(MidiType::ActiveSensing);
+   }
     
     void sendStart() {
+        send(MidiType::Start);
     }
     
     void sendContinue() {
-    }
+        send(MidiType::Continue);
+  }
     
     void sendStop() {
+        send(MidiType::Stop);
+   }
+    
+    void sendClock() {
+        send(MidiType::Clock);
+   }
+    
+    void sendTick() {
+        send(MidiType::Tick);
     }
     
     void sendReset() {
+        send(MidiType::SystemReset);
     }
     
-    void sendClock() {
-    }
-    
-    void sendTick() {
-    }
 
     //receiving
     void setHandleNoteOn(void (*fptr)(byte channel, byte note, byte velocity)) {
@@ -418,8 +439,10 @@ protected:
             return; // Don't send anything
         }
         
-        if (type <= MidiType::PitchBend)  // Channel messages
+        if (type <= MidiType::PitchBend)
         {
+            // Channel messages
+            
             // Protection: remove MSBs on data
             data1 &= 0x7f;
             data2 &= 0x7f;
@@ -437,22 +460,29 @@ protected:
         }
         else if (type >= MidiType::Clock && type <= MidiType::SystemReset)
         {
-            serialize(type); // System Real-time and 1 byte.
+            send(type); // System Real-time and 1 byte.
         }
     }
     
     // SystemCommon message
-    virtual void send(MidiType type, DataByte data1, DataByte data2)
+    virtual void send(MidiType type, DataByte data1)
     {
         
     }
     
-    // realTime
+    // realTime messages
     virtual void send(MidiType type)
     {
         
     }
+
+    virtual bool begin(const char*) = 0;
     
+    virtual void run() = 0;
+    
+    // serialize from the hardware
+
+    // serialize towards to hardware
     virtual void serialize(DataByte) = 0;
     virtual void serialize(DataByte, DataByte) = 0;
     virtual void serialize(DataByte, DataByte, DataByte) = 0;

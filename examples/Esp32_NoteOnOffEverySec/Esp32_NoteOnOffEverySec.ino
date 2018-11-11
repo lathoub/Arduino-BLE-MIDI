@@ -1,6 +1,3 @@
-// Select your device
-#define ESP32
-
 #include "BleMidi.h"
 
 BLEMIDI_CREATE_INSTANCE(bm);

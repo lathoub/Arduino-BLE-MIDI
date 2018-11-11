@@ -14,9 +14,9 @@ class BleMidiInterface : public AbstractMidiInterface
 {
 protected:
     // ESP32
-    BLEServer  *pServer;
-    BLEAdvertising *pAdvertising;
-    BLECharacteristic *pCharacteristic;
+    BLEServer  * _server;
+    BLEAdvertising * _advertising;
+    BLECharacteristic *_characteristic;
     
     bool _connected;
     
@@ -28,7 +28,7 @@ public:
     void(*_disconnectedCallback)() = NULL;
     
 protected:
-    void getMidiTimestamp (uint8_t *header, uint8_t *timestamp)
+    inline static void getMidiTimestamp (uint8_t *header, uint8_t *timestamp)
     {
         /*
          The first byte of all BLE packets must be a header byte. This is followed by timestamp bytes and MIDI messages.
@@ -74,6 +74,9 @@ protected:
         *timestamp = (currentTimeStamp & 0x7F) | 0x80;            // 7 bits plus MSB
     }
     
+    
+    // serialize towards hardware
+    
     void serialize(DataByte b1)
     {
         getMidiTimestamp(&_midiPacket[0], &_midiPacket[1]);
@@ -82,8 +85,8 @@ protected:
 
         // TODO: quid running status
         
-        pCharacteristic->setValue(_midiPacket, 3);
-        pCharacteristic->notify();
+        _characteristic->setValue(_midiPacket, 3);
+        _characteristic->notify();
     };
     
     void serialize(DataByte b1, DataByte b2)
@@ -95,8 +98,8 @@ protected:
 
         // TODO: quid running status
 
-        pCharacteristic->setValue(_midiPacket, 4);
-        pCharacteristic->notify();
+        _characteristic->setValue(_midiPacket, 4);
+        _characteristic->notify();
     };
     
     void serialize(DataByte b1, DataByte b2, DataByte b3)
@@ -109,8 +112,8 @@ protected:
 
         // TODO: quid running status
 
-        pCharacteristic->setValue(_midiPacket, 5);
-        pCharacteristic->notify();
+        _characteristic->setValue(_midiPacket, 5);
+        _characteristic->notify();
    };
 
 
@@ -123,10 +126,17 @@ public:
     {
     }
     
+    // TODO why must these functions be inline??
+    
     inline bool begin(const char* deviceName);
     
-    inline void receive(uint8_t *buffer, uint8_t bufferSize);
+    inline void run()
+    {
+        // n/a, data comes in async (see onWrite callbacks)
+    }
     
+    inline void receive(uint8_t *buffer, uint8_t bufferSize);
+
     void onConnected(void(*fptr)()) {
         _connected = true;
         _connectedCallback = fptr;
@@ -146,12 +156,12 @@ public:
 protected:
     BleMidiInterface* _bleMidiInterface;
 
-    void onConnect(BLEServer* pServer) {
+    void onConnect(BLEServer* server) {
         if (_bleMidiInterface->_connectedCallback)
             _bleMidiInterface->_connectedCallback();
     };
     
-    void onDisconnect(BLEServer* pServer) {
+    void onDisconnect(BLEServer* server) {
         if (_bleMidiInterface->_disconnectedCallback)
             _bleMidiInterface->_disconnectedCallback();
     }
@@ -162,11 +172,12 @@ public:
     MyCharacteristicCallbacks(BleMidiInterface* bleMidiInterface) {
         _bleMidiInterface = bleMidiInterface;
     }
+    
 protected:
     BleMidiInterface* _bleMidiInterface;
 
-    void onWrite(BLECharacteristic *pCharacteristic) {
-        std::string rxValue = pCharacteristic->getValue();
+    void onWrite(BLECharacteristic * characteristic) {
+        std::string rxValue = characteristic->getValue();
         if (rxValue.length() > 0) {
             _bleMidiInterface->receive((uint8_t *)(rxValue.c_str()), rxValue.length());
         }
@@ -177,23 +188,23 @@ bool BleMidiInterface::begin(const char* deviceName)
 {
     BLEDevice::init(deviceName);
     
-    pServer = BLEDevice::createServer();
-    pServer->setCallbacks(new MyServerCallbacks(this));
+    _server = BLEDevice::createServer();
+    _server->setCallbacks(new MyServerCallbacks(this));
     
     // Create the BLE Service
-    auto pService = pServer->createService(BLEUUID(SERVICE_UUID));
+    auto service = _server->createService(BLEUUID(SERVICE_UUID));
     
     // Create a BLE Characteristic
-    pCharacteristic = pService->createCharacteristic(
+    _characteristic = service->createCharacteristic(
                                                      BLEUUID(CHARACTERISTIC_UUID),
                                                      BLECharacteristic::PROPERTY_READ   |
                                                      BLECharacteristic::PROPERTY_WRITE  |
                                                      BLECharacteristic::PROPERTY_NOTIFY |
                                                      BLECharacteristic::PROPERTY_WRITE_NR
                                                      );
-    pCharacteristic->setCallbacks(new MyCharacteristicCallbacks(this));
+    _characteristic->setCallbacks(new MyCharacteristicCallbacks(this));
     // Start the service
-    pService->start();
+    service->start();
     
     auto advertisementData = BLEAdvertisementData();
     advertisementData.setFlags(0x04);
@@ -201,9 +212,9 @@ bool BleMidiInterface::begin(const char* deviceName)
     advertisementData.setName(deviceName);
     
     // Start advertising
-    pAdvertising = pServer->getAdvertising();
-    pAdvertising->setAdvertisementData(advertisementData);
-    pAdvertising->start();
+    _advertising = _server->getAdvertising();
+    _advertising->setAdvertisementData(advertisementData);
+    _advertising->start();
     
     return true;
 }
@@ -275,8 +286,8 @@ void BleMidiInterface::receive(uint8_t *buffer, uint8_t bufferSize)
 
             // TODO: switch for type
             
-            if (_noteOnCallback)
-                _noteOnCallback(0, 1, 2);
+if (_noteOnCallback) // if an attached function exisist, call it here
+    _noteOnCallback(0, 1, 2);
 
             //        MIDI.send(command, buffer[lPtr + 1], buffer[lPtr + 2], channel);
         } else {
