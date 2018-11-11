@@ -249,6 +249,46 @@ void BleMidiInterface::sendMIDI(StatusByte status, DataByte data1, DataByte data
                 _pitchBendCallback(channel, value);
             }
             break;
+            
+        case SystemExclusive:
+            break;
+            
+        case TimeCodeQuarterFrame:
+            if (_timeCodeQuarterFrameCallback) _timeCodeQuarterFrameCallback(data1);
+            break;
+        case SongPosition:
+            if (_songPositionCallback) {
+                unsigned short value = unsigned((data1 & 0x7f) | ((data2 & 0x7f) << 7));
+                _songPositionCallback(value);
+            }
+            break;
+        case SongSelect:
+            if (_songSelectCallback) _songSelectCallback(data1);
+            break;
+        case TuneRequest:
+            if (_tuneRequestCallback) _tuneRequestCallback();
+            break;
+            
+        case Clock:
+            if (_clockCallback) _clockCallback();
+            break;
+        case Tick:
+            break;
+        case Start:
+            if (_startCallback) _startCallback();
+            break;
+        case Continue:
+            if (_continueCallback) _continueCallback();
+            break;
+        case Stop:
+            if (_stopCallback) _stopCallback();
+            break;
+        case ActiveSensing:
+            if (_activeSensingCallback) _activeSensingCallback();
+            break;
+        case SystemReset:
+            if (_resetCallback) _resetCallback();
+            break;
     }
 }
 
