@@ -132,9 +132,9 @@ public:
     
     inline void read()
     {
-        // n/a, data comes in async (see onWrite callbacks)
     }
     
+    inline void sendMIDI(StatusByte, DataByte data1 = 0, DataByte data2 = 0);
     inline void receive(uint8_t *buffer, uint8_t bufferSize);
 
     void onConnected(void(*fptr)()) {
@@ -219,6 +219,39 @@ bool BleMidiInterface::begin(const char* deviceName)
     return true;
 }
 
+void BleMidiInterface::sendMIDI(StatusByte status, DataByte data1, DataByte data2)
+{
+    MidiType type   = getTypeFromStatusByte(status);
+    Channel channel = getChannelFromStatusByte(status);
+
+    switch (type) {
+        case NoteOff:
+            if (_noteOffCallback) _noteOffCallback(channel, data1, data2);
+            break;
+        case NoteOn:
+            if (_noteOnCallback) _noteOnCallback(channel, data1, data2);
+            break;
+        case AfterTouchPoly:
+            if (_afterTouchPolyCallback) _afterTouchPolyCallback(channel, data1, data2);
+            break;
+        case ControlChange:
+            if (_controlChangeCallback) _controlChangeCallback(channel, data1, data2);
+            break;
+        case ProgramChange:
+            if (_programChangeCallback) _programChangeCallback(channel, data1);
+            break;
+        case AfterTouchChannel:
+            if (_afterTouchChannelCallback) _afterTouchChannelCallback(channel, data1);
+            break;
+        case PitchBend:
+            if (_pitchBendCallback) {
+                int value = (int) ((data1 & 0x7f) | ((data2 & 0x7f) << 7)) + MIDI_PITCHBEND_MIN;
+                _pitchBendCallback(channel, value);
+            }
+            break;
+    }
+}
+
 void BleMidiInterface::receive(uint8_t *buffer, uint8_t bufferSize)
 {
     /*
@@ -251,64 +284,54 @@ void BleMidiInterface::receive(uint8_t *buffer, uint8_t bufferSize)
      MIDI messages. In the MIDI BLE protocol, the System Real-Time messages must be deinterleaved
      from other messages – except for System Exclusive messages.
      */
-    Channel channel;
-    MidiType command;
     
     //Pointers used to search through payload.
     uint8_t lPtr = 0;
     uint8_t rPtr = 0;
+    
+    //lastStatus used to capture runningStatus
+    uint8_t lastStatus;
+    
     //Decode first packet -- SHALL be "Full MIDI message"
     lPtr = 2; //Start at first MIDI status -- SHALL be "MIDI status"
+    
     //While statement contains incrementing pointers and breaks when buffer size exceeded.
-    while (1) {
-        //lastStatus used to capture runningStatus
-        auto lastStatus = buffer[lPtr];
-        if ( (buffer[lPtr] < 0x80) ) {
+    while(1){
+        lastStatus = buffer[lPtr];
+        if( (buffer[lPtr] < 0x80) ){
             //Status message not present, bail
             return;
         }
-        
-        command = getTypeFromStatusByte(lastStatus);
-        channel = getChannelFromStatusByte(lastStatus);
-        
         //Point to next non-data byte
         rPtr = lPtr;
-        while ( (buffer[rPtr + 1] < 0x80) && (rPtr < (bufferSize - 1)) ) {
+        while( (buffer[rPtr + 1] < 0x80)&&(rPtr < (bufferSize - 1)) ){
             rPtr++;
         }
         //look at l and r pointers and decode by size.
-        if ( rPtr - lPtr < 1 ) {
+        if( rPtr - lPtr < 1 ){
             //Time code or system
-            //        MIDI.send(command, 0, 0, channel);
-        } else if ( rPtr - lPtr < 2 ) {
-            //        MIDI.send(command, buffer[lPtr + 1], 0, channel);
-        } else if ( rPtr - lPtr < 3 ) {
-
-            // TODO: switch for type
-            
-if (_noteOnCallback) // if an attached function exisist, call it here
-    _noteOnCallback(0, 1, 2);
-
-            //        MIDI.send(command, buffer[lPtr + 1], buffer[lPtr + 2], channel);
+            sendMIDI(lastStatus);
+        } else if( rPtr - lPtr < 2 ) {
+            sendMIDI(lastStatus, buffer[lPtr + 1]);
+        } else if( rPtr - lPtr < 3 ) {
+            sendMIDI(lastStatus, buffer[lPtr + 1], buffer[lPtr + 2]);
         } else {
             //Too much data
             //If not System Common or System Real-Time, send it as running status
-            switch ( buffer[lPtr] & 0xF0 )
+            switch( buffer[lPtr] & 0xF0 )
             {
-                case 0x80:
-                case 0x90:
-                case 0xA0:
-                case 0xB0:
-                case 0xE0:
-                    for (int i = lPtr; i < rPtr; i = i + 2) {
-                        //                   MIDI.send(command, buffer[i + 1], buffer[i + 2], channel);
-                    }
+                case NoteOff:
+                case NoteOn:
+                case AfterTouchPoly:
+                case ControlChange:
+                case PitchBend:
+                    for(int i = lPtr; i < rPtr; i = i + 2)
+                        sendMIDI(lastStatus, buffer[i + 1], buffer[i + 2]);
                     break;
-                case 0xC0:
-                case 0xD0:
-                    for (int i = lPtr; i < rPtr; i = i + 1) {
-                        //                   MIDI.send(command, buffer[i + 1], 0, channel);
-                    }
+                case ProgramChange:
+                case AfterTouchChannel:
+                    for(int i = lPtr; i < rPtr; i = i + 1)
+                        sendMIDI(lastStatus, buffer[i + 1]);
                     break;
                 default:
                     break;
@@ -316,11 +339,12 @@ if (_noteOnCallback) // if an attached function exisist, call it here
         }
         //Point to next status
         lPtr = rPtr + 2;
-        if (lPtr >= bufferSize) {
+        if(lPtr >= bufferSize){
             //end of packet
             return;
         }
     }
+
 }
 
 END_BLEMIDI_NAMESPACE
