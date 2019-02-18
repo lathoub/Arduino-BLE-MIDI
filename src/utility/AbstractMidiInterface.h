@@ -277,11 +277,11 @@ namespace Midi {
     public:
         // sending
         void sendNoteOn(DataByte note, DataByte velocity, Channel channel) {
-            sendChannelMessage(MidiType::NoteOn, channel, note, velocity);
+            sendChannelMessage(MidiType::NoteOn, note, velocity, channel);
         }
         
         void sendNoteOff(DataByte note, DataByte velocity, Channel channel) {
-            sendChannelMessage(MidiType::NoteOff, channel, note, velocity);
+            sendChannelMessage(MidiType::NoteOff, note, velocity, channel);
         }
         
         void sendProgramChange(DataByte number, Channel channel) {
