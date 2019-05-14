@@ -4,6 +4,7 @@
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
+#include <BLE2902.h>
 
 #include "utility/AbstractMidiInterface.h"
 using namespace Midi;
@@ -202,6 +203,9 @@ bool BleMidiInterface::begin(const char* deviceName)
                                                      BLECharacteristic::PROPERTY_NOTIFY |
                                                      BLECharacteristic::PROPERTY_WRITE_NR
                                                      );
+    // Add CCCD 0x2902 to allow notify
+    _characteristic->addDescriptor(new BLE2902());
+
     _characteristic->setCallbacks(new MyCharacteristicCallbacks(this));
     // Start the service
     service->start();
