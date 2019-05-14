@@ -346,7 +346,7 @@ namespace Midi {
         }
         
         void sendActiveSensing() {
-            sendSystemCommonMessage(MidiType::ActiveSensing);
+            sendRealTimeMessage(MidiType::ActiveSensing);
         }
         
         
