@@ -6,7 +6,7 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
-#include "utility/AbstractMidiInterface.h"
+#include "interface/AbstractMidiInterface.h"
 using namespace Midi;
 
 BEGIN_BLEMIDI_NAMESPACE
@@ -21,7 +21,7 @@ protected:
     
     bool _connected;
     
-    uint8_t _midiPacket[5];
+    uint8_t _midiPacket[5]; // outgoing
     
 public:
     // callbacks
@@ -78,7 +78,7 @@ protected:
     
     // serialize towards hardware
     
-    void serialize(DataByte b1)
+    void write(DataByte b1)
     {
         getMidiTimestamp(&_midiPacket[0], &_midiPacket[1]);
  
@@ -90,7 +90,7 @@ protected:
         _characteristic->notify();
     };
     
-    void serialize(DataByte b1, DataByte b2)
+    void write(DataByte b1, DataByte b2)
     {
         getMidiTimestamp(&_midiPacket[0], &_midiPacket[1]);
 
@@ -103,7 +103,7 @@ protected:
         _characteristic->notify();
     };
     
-    void serialize(DataByte b1, DataByte b2, DataByte b3)
+    void write(DataByte b1, DataByte b2, DataByte b3)
     {
         getMidiTimestamp(&_midiPacket[0], &_midiPacket[1]);
         
@@ -133,6 +133,7 @@ public:
     
     inline void read()
     {
+		// n/a no need to call read() as incoming data comes in async via onWrite 
     }
     
     inline void sendMIDI(StatusByte, DataByte data1 = 0, DataByte data2 = 0);

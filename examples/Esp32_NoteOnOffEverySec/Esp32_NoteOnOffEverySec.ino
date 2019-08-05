@@ -29,9 +29,9 @@ void setup()
 // -----------------------------------------------------------------------------
 void loop()
 {
-  bm.read();
+  bm.sendNoteOn(60, 127, 1); // note 60, velocity 127 on channel 1
+  bm.sendNoteOff(60, 127, 1);
 
-  //bm.sendNoteOn(60, 127, 0);
   delay(1000);
 }
 

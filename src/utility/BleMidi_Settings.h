@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utility/BleMidi_Namespace.h"
+#include "BleMidi_Namespace.h"
 
 //#define DEBUG
 #define RELEASE
