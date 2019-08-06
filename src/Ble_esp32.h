@@ -6,7 +6,7 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
-#include "interface/midiCommon.h"
+#include "common/midiCommon.h"
 using namespace Midi;
 
 BEGIN_BLEMIDI_NAMESPACE
