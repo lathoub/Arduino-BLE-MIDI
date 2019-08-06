@@ -6,12 +6,12 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
-#include "interface/AbstractMidiInterface.h"
+#include "interface/midiCommon.h"
 using namespace Midi;
 
 BEGIN_BLEMIDI_NAMESPACE
 
-class BleMidiInterface : public AbstractMidiInterface
+class BleMidiInterface : public MidiCommonInterface
 {
 protected:
     // ESP32
@@ -133,7 +133,7 @@ public:
     
     inline void read()
     {
-		// n/a no need to call read() as incoming data comes in async via onWrite 
+		// n/a no need to call read() in loop, as incoming data comes in async via onWrite 
     }
     
     inline void sendMIDI(StatusByte, DataByte data1 = 0, DataByte data2 = 0);
