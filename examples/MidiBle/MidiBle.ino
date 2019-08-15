@@ -1,6 +1,11 @@
-#include "BleMidi.h"
+#include <MIDI.h>
 
-BLEMIDI_CREATE_INSTANCE(bm);
+#include <midi_bleTransport.h>
+#include <Ble_esp32.h>
+
+bleMidi::BluetoothEsp32 sBluetoothEsp32;
+bleMidi::BleMidiTransport<bleMidi::BluetoothEsp32> bm((bleMidi::BluetoothEsp32&) sBluetoothEsp32);
+midi::MidiInterface<bleMidi::BleMidiTransport<bleMidi::BluetoothEsp32>> MIDI((bleMidi::BleMidiTransport<bleMidi::BluetoothEsp32>&)bm);
 
 // -----------------------------------------------------------------------------
 //
@@ -9,17 +14,15 @@ void setup()
 {
   // Serial communications and wait for port to open:
   Serial.begin(115200);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for Leonardo only
-  }
+  while (!Serial);
 
-  bm.begin("hehe");
+  MIDI.begin("hihi", 1);
 
   bm.onConnected(OnBleMidiConnected);
   bm.onDisconnected(OnBleMidiDisconnected);
 
-  bm.setHandleNoteOn(OnBleMidiNoteOn);
-  bm.setHandleNoteOff(OnBleMidiNoteOff);
+  MIDI.setHandleNoteOn(OnBleMidiNoteOn);
+  MIDI.setHandleNoteOff(OnBleMidiNoteOff);
 
   Serial.println(F("looping"));
 }
@@ -29,8 +32,10 @@ void setup()
 // -----------------------------------------------------------------------------
 void loop()
 {
-  bm.sendNoteOn(60, 127, 1); // note 60, velocity 127 on channel 1
-  bm.sendNoteOff(60, 127, 1);
+  MIDI.read();
+
+  MIDI.sendNoteOn(60, 127, 1); // note 60, velocity 127 on channel 1
+  MIDI.sendNoteOff(60, 127, 1);
 
   delay(1000);
 }

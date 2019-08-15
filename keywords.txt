@@ -1,12 +1,13 @@
 #######################################
-# Syntax Coloring Map for AppleMIDI
+# Syntax Coloring Map for BLEMIDI
 #######################################
 
 #######################################
 # Datatypes (KEYWORD1)
 #######################################
-BLEMIDI	KEYWORD1
-BLEMIDI.h	KEYWORD1
+midi_bleTransport	KEYWORD1
+midi_bleTransport.h	KEYWORD1
+Ble_esp32.h	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
