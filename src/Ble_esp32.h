@@ -125,7 +125,7 @@ bool BluetoothEsp32::begin(const char* deviceName, BleMidiTransport<class Blueto
     advertisementData.setFlags(0x04);
     advertisementData.setCompleteServices(BLEUUID(SERVICE_UUID));
     advertisementData.setName(deviceName);
-    
+
     // Start advertising
     _advertising = _server->getAdvertising();
     _advertising->setAdvertisementData(advertisementData);

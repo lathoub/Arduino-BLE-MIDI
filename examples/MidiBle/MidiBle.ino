@@ -7,6 +7,9 @@ bleMidi::BluetoothEsp32 sBluetoothEsp32;
 bleMidi::BleMidiTransport<bleMidi::BluetoothEsp32> bm((bleMidi::BluetoothEsp32&) sBluetoothEsp32);
 midi::MidiInterface<bleMidi::BleMidiTransport<bleMidi::BluetoothEsp32>> MIDI((bleMidi::BleMidiTransport<bleMidi::BluetoothEsp32>&)bm);
 
+unsigned long t0 = millis();
+bool isConnected = false;
+
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
@@ -16,7 +19,9 @@ void setup()
   Serial.begin(115200);
   while (!Serial);
 
-  MIDI.begin("hihi", 1);
+  Serial.println(F("booting"));
+
+  MIDI.begin("Huzzah BLE MIDI", 1);
 
   bm.onConnected(OnBleMidiConnected);
   bm.onDisconnected(OnBleMidiDisconnected);
@@ -24,7 +29,7 @@ void setup()
   MIDI.setHandleNoteOn(OnBleMidiNoteOn);
   MIDI.setHandleNoteOff(OnBleMidiNoteOff);
 
-  Serial.println(F("looping"));
+  Serial.println(F("ready"));
 }
 
 // -----------------------------------------------------------------------------
@@ -34,10 +39,14 @@ void loop()
 {
   MIDI.read();
 
-  MIDI.sendNoteOn(60, 127, 1); // note 60, velocity 127 on channel 1
-  MIDI.sendNoteOff(60, 127, 1);
+  if (isConnected && (millis() - t0) > 1000)
+  {
+    t0 = millis();
 
-  delay(1000);
+    MIDI.sendNoteOn(60, 127, 1); // note 60, velocity 127 on channel 1
+    MIDI.sendNoteOff(60, 127, 1);
+  }
+
 }
 
 // ====================================================================================
@@ -49,6 +58,7 @@ void loop()
 // -----------------------------------------------------------------------------
 void OnBleMidiConnected() {
   Serial.println(F("Connected"));
+  isConnected = true;
 }
 
 // -----------------------------------------------------------------------------
@@ -56,6 +66,7 @@ void OnBleMidiConnected() {
 // -----------------------------------------------------------------------------
 void OnBleMidiDisconnected() {
   Serial.println(F("Disconnected"));
+  isConnected = false;
 }
 
 // -----------------------------------------------------------------------------

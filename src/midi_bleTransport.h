@@ -15,12 +15,10 @@ template<class BleClass>
 class BleMidiTransport
 {
 private:
-	uint8_t _midiPacket[5]; // outgoing
+    midi::RingBuffer<byte, 44> mRxBuffer;
     
-    typedef midi::RingBuffer<byte, 44> TxBuffer;
-    typedef midi::RingBuffer<byte, 44> RxBuffer;
-    TxBuffer mTxBuffer;
-    RxBuffer mRxBuffer;
+    byte mTxBuffer[44];
+    unsigned mTxIndex;
     
 	bool _connected;
 
@@ -29,35 +27,44 @@ private:
 
 public:
 	inline BleMidiTransport(BleClass& inBleClass)
-		: mBleClass(inBleClass)
+		: mBleClass(inBleClass), mTxIndex(0)
 	{
 	}
 
 	inline ~BleMidiTransport() {}
 
     inline bool begin(int baudrate) {} // n/a
-
-    inline bool begin(const char* deviceName)
-    {
-        return mBleClass.begin(deviceName, this);
-    }
+    inline bool begin(const char* deviceName) { return mBleClass.begin(deviceName, this); }
 
     inline unsigned available() { return mRxBuffer.getLength();  }
     inline byte read() { return mRxBuffer.read(); }
-    inline void beginWrite() { mTxBuffer.clear(); }
-    inline void write(byte inData) { mTxBuffer.write(inData); }
+    
+    inline void beginWrite()
+    {
+        getMidiTimestamp(&mTxBuffer[0], &mTxBuffer[1]);
+        mTxIndex = 2;
+    }
+    inline void write(byte inData)
+    {
+        // check for size! SysEx!!!
+        if (false)
+        {
+            // should only happen from SysEx!
+            // if we approach the end of the buffer, chop-up in segments until
+            // we reach F7 (end of SysEx)
+        }
+        
+        mTxBuffer[mTxIndex++] = inData;
+    }
     inline void endWrite()
     {
-        getMidiTimestamp(&_midiPacket[0], &_midiPacket[1]);
-        
-        mTxBuffer.read(_midiPacket + 2, mTxBuffer.getLength());
-        
-        mBleClass.write((uint8_t*)_midiPacket, mTxBuffer.getLength() + 2);
+        mBleClass.write(mTxBuffer, mTxIndex);
     }
  
 public:
     void receive(uint8_t* buffer, uint8_t length)
     {
+        // TODO: check for size!! (SysEx!!)
         mRxBuffer.read(buffer, length);
     }
 
