@@ -18,16 +18,14 @@ private:
     midi::RingBuffer<byte, 44> mRxBuffer;
     
     byte mTxBuffer[44];
-    unsigned mTxIndex;
+    unsigned mTxIndex = 0;
     
-	bool _connected;
-
 private:
 	BleClass& mBleClass;
 
 public:
 	inline BleMidiTransport(BleClass& inBleClass)
-		: mBleClass(inBleClass), mTxIndex(0)
+		: mBleClass(inBleClass)
 	{
 	}
 
@@ -117,17 +115,15 @@ protected:
     
 public:
 	// callbacks
-	void(*_connectedCallback)() = NULL;
-	void(*_disconnectedCallback)() = NULL;
+	void(*_connectedCallback)() = nullptr;
+	void(*_disconnectedCallback)() = nullptr;
 
 public:
 	void onConnected(void(*fptr)()) {
-		_connected = true;
 		_connectedCallback = fptr;
 	}
 
 	void onDisconnected(void(*fptr)()) {
-		_connected = false;
 		_disconnectedCallback = fptr;
 	}
 

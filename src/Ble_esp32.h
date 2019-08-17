@@ -6,26 +6,22 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
+BEGIN_BLEMIDI_NAMESPACE
+
 #define SERVICE_UUID        "03b80e5a-ede8-4b33-a751-6ce34ec4c700"
 #define CHARACTERISTIC_UUID "7772e5db-3868-4112-a1a9-f2669d106bf3"
-
-BEGIN_BLEMIDI_NAMESPACE
 
 class BluetoothEsp32
 {
 private:
-    BLEServer*			_server;
-    BLEAdvertising*		_advertising;
-    BLECharacteristic*	_characteristic;
+    BLEServer*			_server = nullptr;
+    BLEAdvertising*		_advertising = nullptr;
+    BLECharacteristic*	_characteristic = nullptr;
         
-	BleMidiTransport<class BluetoothEsp32>* _bleMidiTransport;
+	BleMidiTransport<class BluetoothEsp32>* _bleMidiTransport = nullptr;
 
 public:
 	BluetoothEsp32()
-		:   _server(NULL),
-            _advertising(NULL),
-            _characteristic(NULL),
-            _bleMidiTransport(NULL)
     {
     }
     
@@ -66,7 +62,7 @@ public:
     }
 
 protected:
-	BluetoothEsp32* _bluetoothEsp32;
+	BluetoothEsp32* _bluetoothEsp32 = nullptr;
 
     void onConnect(BLEServer* server) {
 		_bluetoothEsp32->connected();
@@ -84,7 +80,7 @@ public:
     }
     
 protected:
-	BluetoothEsp32* _bluetoothEsp32;
+	BluetoothEsp32* _bluetoothEsp32 = nullptr;
 
     void onWrite(BLECharacteristic * characteristic) {
         std::string rxValue = characteristic->getValue();
