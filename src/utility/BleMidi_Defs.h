@@ -16,6 +16,11 @@ BEGIN_BLEMIDI_NAMESPACE
 #define BLEMIDI_CREATE_INSTANCE(Name)                            \
     BLEMIDI_NAMESPACE::BleMidiInterface Name;
 
+/*! \brief Create an instance of the library
+ */
+#define BLEMIDI_CREATE_CLIENT_INSTANCE(Name)                            \
+    BLEMIDI_NAMESPACE::BleMidiInterfaceClient Name;
+
 
 /*! \brief
 */
