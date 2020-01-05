@@ -12,4 +12,5 @@
 
 #if defined(ESP32)
 #include "Ble_esp32.h"
+#include "BleMidiClient_esp32.h"
 #endif
