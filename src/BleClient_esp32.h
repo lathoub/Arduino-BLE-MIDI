@@ -30,8 +30,8 @@ static void scanCompleteCB(BLEScanResults scanResults)
     {
         scanResults.dump();
         if (doScan)
-        {
              pBLEScan->start(10, scanCompleteCB);
+        {   
         }
     }
   
@@ -54,12 +54,13 @@ public:
         void * p = heap_caps_malloc(size, MALLOC_CAP_SPIRAM);   
         return p;                                               
     }      
+    
     // callbacks
     void(*_connectedCallback)() = NULL;
     void(*_disconnectedCallback)() = NULL;
     char _deviceName[32];
     bool _doConnect;
-    BLEAdvertisedDevice * _advertising;
+    BLEAdvertisedDevice * _advertising = NULL;
     BLERemoteService* pRemoteService;
     BLERemoteCharacteristic* pRemoteCharacteristic;
     bool _connected;
@@ -157,7 +158,8 @@ protected:
    };
 
    bool connectToServer() 
-    {    
+    {
+        const uint8_t bothOn[] = {0x3, 0x0};
         // Connect to the remote BLE Server.
         pClient->connect(_advertising);  // if you pass BLEAdvertisedDevice instead of address, it will be recognized type of peer device address (public or private)
     
@@ -176,7 +178,8 @@ protected:
             pClient->disconnect();
             return false;
         }
-        
+
+        pRemoteCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)bothOn, 2, true);
         return true;
     }; 
 
@@ -192,7 +195,7 @@ public:
     
     // TODO why must these functions be inline??
     
-    inline bool begin(const char* deviceName);
+    inline bool begin(const char* thisDeviceName, const char *remoteDeviceName);
     
     inline void read()
     {
@@ -311,10 +314,18 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       return;
     } 
 
+
     // We have found a device, let us now see if it contains the service we are looking for.
     if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(BLEUUID(SERVICE_UUID)))
      {
+      
       BLEDevice::getScan()->stop();
+
+      if (_BleMidiInterfaceClient->_advertising != NULL)
+      {
+          delete(_BleMidiInterfaceClient->_advertising);
+          _BleMidiInterfaceClient->_advertising = NULL;
+      }
       _BleMidiInterfaceClient->_advertising = new BLEAdvertisedDevice(advertisedDevice);
       _BleMidiInterfaceClient->_doConnect = true;
       doScan = false;
@@ -324,14 +335,14 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 
 protected:
     BleMidiInterfaceClient* _BleMidiInterfaceClient;
-
+ 
 }; // MyAdvertisedDeviceCallbacks
 
-bool BleMidiInterfaceClient::begin(const char* deviceName)
+bool BleMidiInterfaceClient::begin(const char* thisDeviceName, const char *remoteDeviceName)
 {
-    BLEDevice::init(deviceName);
+    BLEDevice::init(thisDeviceName);
     
-    strncpy(_deviceName, deviceName, 32);
+    strncpy(_deviceName, remoteDeviceName, 32);
 
     pClient  = BLEDevice::createClient();
     pClient->setClientCallbacks(new MyClientCallbacks(this));
