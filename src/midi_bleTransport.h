@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "utility/midi_bleSettings.h"
-#include "utility/midi_bleDefs.h"
+#include "midi_bleSettings.h"
+#include "midi_bleDefs.h"
 
-#include <midi_RingBuffer.h>
+#include "utility/Deque.h"
 
 BEGIN_BLEMIDI_NAMESPACE
 
@@ -15,7 +15,7 @@ template<class BleClass>
 class BleMidiTransport
 {
 private:
-    midi::RingBuffer<byte, 44> mRxBuffer;
+    Deque<byte, 44> mRxBuffer;
     
     byte mTxBuffer[44];
     unsigned mTxIndex = 0;

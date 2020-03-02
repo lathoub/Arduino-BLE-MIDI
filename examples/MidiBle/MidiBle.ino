@@ -1,5 +1,4 @@
-#include <MIDI.h>
-
+#define DEBUG 4
 #include <midi_bleTransport.h>
 #include <Ble_esp32.h>
 
@@ -16,10 +15,7 @@ bool isConnected = false;
 void setup()
 {
   // Serial communications and wait for port to open:
-  Serial.begin(115200);
-  while (!Serial);
-
-  Serial.println(F("booting"));
+  DEBUG_BEGIN(115200);
 
   MIDI.begin("Huzzah BLE MIDI", 1);
 
@@ -29,7 +25,7 @@ void setup()
   MIDI.setHandleNoteOn(OnBleMidiNoteOn);
   MIDI.setHandleNoteOff(OnBleMidiNoteOff);
 
-  Serial.println(F("ready"));
+  N_DEBUG_PRINTLN(F("Ready"));
 }
 
 // -----------------------------------------------------------------------------
@@ -57,7 +53,7 @@ void loop()
 // rtpMIDI session. Device connected
 // -----------------------------------------------------------------------------
 void OnBleMidiConnected() {
-  Serial.println(F("Connected"));
+  N_DEBUG_PRINTLN(F("Connected"));
   isConnected = true;
 }
 
@@ -73,13 +69,13 @@ void OnBleMidiDisconnected() {
 // received note on
 // -----------------------------------------------------------------------------
 void OnBleMidiNoteOn(byte channel, byte note, byte velocity) {
-  Serial.print(F("Incoming NoteOn from channel:"));
-  Serial.print(channel);
-  Serial.print(F(" note:"));
-  Serial.print(note);
-  Serial.print(F(" velocity:"));
-  Serial.print(velocity);
-  Serial.println();
+  N_DEBUG_PRINT(F("Incoming NoteOn from channel:"));
+  N_DEBUG_PRINT(channel);
+  N_DEBUG_PRINT(F(" note:"));
+  N_DEBUG_PRINT(note);
+  N_DEBUG_PRINT(F(" velocity:"));
+  N_DEBUG_PRINT(velocity);
+  N_DEBUG_PRINTLN();
 }
 
 
@@ -87,11 +83,11 @@ void OnBleMidiNoteOn(byte channel, byte note, byte velocity) {
 // received note off
 // -----------------------------------------------------------------------------
 void OnBleMidiNoteOff(byte channel, byte note, byte velocity) {
-  Serial.print(F("Incoming NoteOff from channel:"));
-  Serial.print(channel);
-  Serial.print(F(" note:"));
-  Serial.print(note);
-  Serial.print(F(" velocity:"));
-  Serial.print(velocity);
-  Serial.println();
+  N_DEBUG_PRINT(F("Incoming NoteOff from channel:"));
+  N_DEBUG_PRINT(channel);
+  N_DEBUG_PRINT(F(" note:"));
+  N_DEBUG_PRINT(note);
+  N_DEBUG_PRINT(F(" velocity:"));
+  N_DEBUG_PRINT(velocity);
+  N_DEBUG_PRINTLN();
 }
