@@ -42,8 +42,8 @@ void loop()
   {
     t0 = millis();
 
- //   MIDI.sendNoteOn(60, 127, 1); // note 60, velocity 127 on channel 1
- //   MIDI.sendNoteOff(60, 0, 1);
+    MIDI.sendNoteOn(60, 127, 1); // note 60, velocity 127 on channel 1
+    MIDI.sendNoteOff(60, 0, 1);
   }
 
 }
