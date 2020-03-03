@@ -3,13 +3,15 @@
 #include "midi_bleNamespace.h"
 
 #if ARDUINO
-	#include <Arduino.h>
+#include <Arduino.h>
 #else
-	#include <inttypes.h>
-	typedef uint8_t byte;
+#include <inttypes.h>
+typedef uint8_t byte;
 #endif
 
 BEGIN_BLEMIDI_NAMESPACE
+
+#define BleBuffer_t Deque<byte, 44>
 
 /*! \brief Create an instance of the library
  */

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 template<typename T, size_t Size>
 class Deque {
 //    class iterator;

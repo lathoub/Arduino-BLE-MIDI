@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include "utility/midi_feat4_4_0/MIDI.h"
+
+#include "utility/Logging.h"
+
 #include "midi_bleSettings.h"
 #include "midi_bleDefs.h"
 
@@ -15,34 +19,40 @@ template<class BleClass>
 class BleMidiTransport
 {
 private:
-    Deque<byte, 44> mRxBuffer;
-    
+    byte mRxBuffer[44];
+    unsigned mRxIndex = 0;
+
     byte mTxBuffer[44];
     unsigned mTxIndex = 0;
     
+    char mDeviceName[24];
+    
 private:
-	BleClass& mBleClass;
+	BleClass mBleClass;
 
 public:
-	inline BleMidiTransport(BleClass& inBleClass)
-		: mBleClass(inBleClass)
+	BleMidiTransport(const char* deviceName)
 	{
+        strncpy(mDeviceName, deviceName, 24);
+        
+        mRxIndex = 0;
+        mTxIndex = 0;
 	}
 
-	inline ~BleMidiTransport() {}
+    void begin(MIDI_NAMESPACE::Channel inChannel = 1)
+    {
+        mBleClass.begin(mDeviceName, this);
+    }
 
-    inline bool begin(int baudrate) {} // n/a
-    inline bool begin(const char* deviceName) { return mBleClass.begin(deviceName, this); }
-
-    inline unsigned available() { return mRxBuffer.getLength();  }
-    inline byte read() { return mRxBuffer.read(); }
-    
-    inline void beginWrite()
+    bool beginTransmission()
     {
         getMidiTimestamp(&mTxBuffer[0], &mTxBuffer[1]);
         mTxIndex = 2;
+        
+        return true;
     }
-    inline void write(byte inData)
+    
+    void write(byte inData)
     {
         // check for size! SysEx!!!
         if (false)
@@ -54,16 +64,32 @@ public:
         
         mTxBuffer[mTxIndex++] = inData;
     }
-    inline void endWrite()
+
+    void endTransmission()
     {
         mBleClass.write(mTxBuffer, mTxIndex);
+        mTxIndex = 0;
     }
  
+    unsigned available()
+    {
+        return mRxIndex;
+    }
+    
+    byte read()
+    {
+        return mRxBuffer[--mRxIndex];
+    }
+
 public:
     void receive(uint8_t* buffer, uint8_t length)
     {
-        // TODO: check for size!! (SysEx!!)
-        mRxBuffer.read(buffer, length);
+        // drop the first 2 bytes
+        
+        for (int i = 2; i < length; i++)
+          mRxBuffer[length - i - 1] = buffer[i];
+
+        mRxIndex = (length - 2);
     }
 
 protected:

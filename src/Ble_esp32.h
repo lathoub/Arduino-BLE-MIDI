@@ -25,10 +25,6 @@ public:
     {
     }
     
-	~BluetoothEsp32()
-	{
-	}
-
 	bool begin(const char*, BleMidiTransport<class BluetoothEsp32>*);
     
     inline void write(uint8_t* data, uint8_t length)
@@ -84,7 +80,7 @@ protected:
 
     void onWrite(BLECharacteristic * characteristic) {
         std::string rxValue = characteristic->getValue();
-        if (rxValue.length() > 0) {
+        if (rxValue.length() > 2) {
 			_bluetoothEsp32->receive((uint8_t *)(rxValue.c_str()), rxValue.length());
         }
     }
