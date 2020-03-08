@@ -87,4 +87,9 @@ template <class T> const T& min(const T& a, const T& b) {
     return !(b < a) ? a : b;     // or: return !comp(b,a)?a:b; for version (2)
 }
 
+bool bitRead(byte value, uint8_t bitToCheck)
+{
+    return value & (1 << bitToCheck)
+}
+
 #define F(x) x

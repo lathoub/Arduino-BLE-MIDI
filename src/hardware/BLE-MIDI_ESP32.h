@@ -8,43 +8,40 @@
 
 BEGIN_BLEMIDI_NAMESPACE
 
-#define SERVICE_UUID        "03b80e5a-ede8-4b33-a751-6ce34ec4c700"
-#define CHARACTERISTIC_UUID "7772e5db-3868-4112-a1a9-f2669d106bf3"
-
-class BluetoothEsp32
+class BLEMIDI_ESP32
 {
 private:
     BLEServer*			_server = nullptr;
     BLEAdvertising*		_advertising = nullptr;
     BLECharacteristic*	_characteristic = nullptr;
         
-	BleMidiTransport<class BluetoothEsp32>* _bleMidiTransport = nullptr;
+	BLEMIDI<class BLEMIDI_ESP32>* _bleMidiTransport = nullptr;
 
 public:
-	BluetoothEsp32()
+	BLEMIDI_ESP32()
     {
     }
     
-	bool begin(const char*, BleMidiTransport<class BluetoothEsp32>*);
+	bool begin(const char*, BLEMIDI<class BLEMIDI_ESP32>*);
     
-    inline void write(uint8_t* data, uint8_t length)
+    void write(uint8_t* data, uint8_t length)
     {
         _characteristic->setValue(data, length);
         _characteristic->notify();
     }
     
-	inline void receive(uint8_t* buffer, uint8_t length)
+	void receive(uint8_t* buffer, uint8_t length)
 	{
 		_bleMidiTransport->receive(buffer, length);
 	}
 
-	inline void connected()
+	void connected()
 	{
 		if (_bleMidiTransport->_connectedCallback)
 			_bleMidiTransport->_connectedCallback();
 	}
 
-	inline void disconnected()
+	void disconnected()
 	{
 		if (_bleMidiTransport->_disconnectedCallback)
 			_bleMidiTransport->_disconnectedCallback();
@@ -53,12 +50,12 @@ public:
 
 class MyServerCallbacks: public BLEServerCallbacks {
 public:
-    MyServerCallbacks(BluetoothEsp32* bluetoothEsp32)
+    MyServerCallbacks(BLEMIDI_ESP32* bluetoothEsp32)
         : _bluetoothEsp32(bluetoothEsp32) {
     }
 
 protected:
-	BluetoothEsp32* _bluetoothEsp32 = nullptr;
+	BLEMIDI_ESP32* _bluetoothEsp32 = nullptr;
 
     void onConnect(BLEServer* server) {
 		_bluetoothEsp32->connected();
@@ -71,22 +68,22 @@ protected:
 
 class MyCharacteristicCallbacks: public BLECharacteristicCallbacks {
 public:
-    MyCharacteristicCallbacks(BluetoothEsp32* bluetoothEsp32)
+    MyCharacteristicCallbacks(BLEMIDI_ESP32* bluetoothEsp32)
         : _bluetoothEsp32(bluetoothEsp32 ) {
     }
     
 protected:
-	BluetoothEsp32* _bluetoothEsp32 = nullptr;
+	BLEMIDI_ESP32* _bluetoothEsp32 = nullptr;
 
     void onWrite(BLECharacteristic * characteristic) {
         std::string rxValue = characteristic->getValue();
-        if (rxValue.length() > 2) {
+        if (rxValue.length() > 0) {
 			_bluetoothEsp32->receive((uint8_t *)(rxValue.c_str()), rxValue.length());
         }
     }
 };
 
-bool BluetoothEsp32::begin(const char* deviceName, BleMidiTransport<class BluetoothEsp32>* bleMidiTransport)
+bool BLEMIDI_ESP32::begin(const char* deviceName, BLEMIDI<class BLEMIDI_ESP32>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 

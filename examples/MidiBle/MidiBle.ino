@@ -1,16 +1,15 @@
 #define DEBUG 4
-#include <midi_bleTransport.h>
-#include <Ble_esp32.h>
+#include <BLE-MIDI.h>
+#include <hardware/BLE-MIDI_ESP32.h>
 
-
-typedef BLEMIDI_NAMESPACE::BleMidiTransport<BLEMIDI_NAMESPACE::BluetoothEsp32> bleMIDI_t;
-bleMIDI_t bm("Huzzah BLE MIDI");
-MIDI_NAMESPACE::MidiInterface<bleMIDI_t> MIDI((bleMIDI_t &)bm);
+BLEMIDI_CREATE_DEFAULT_ESP32_INSTANCE()
 
 USING_NAMESPACE_BLEMIDI
 
 unsigned long t0 = millis();
+#ifdef ESP32
 bool isConnected = false;
+#endif
 
 // -----------------------------------------------------------------------------
 //
