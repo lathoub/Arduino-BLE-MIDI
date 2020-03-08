@@ -44,6 +44,8 @@ public:
     void begin(MIDI_NAMESPACE::Channel inChannel = 1)
     {
         mBleClass.begin(mDeviceName, this);
+
+        mRxQueue = xQueueCreate(Settings::MaxBufferSize, sizeof(uint8_t));
     }
 
     bool beginTransmission(MidiType)
@@ -73,15 +75,32 @@ public:
         mTxIndex = 0;
     }
  
-    unsigned available()
-    {
-        return mRxIndex;
-    }
-    
     byte read()
     {
         return mRxBuffer[--mRxIndex];
     }
+
+    unsigned available()
+    {
+        uint8_t byte;
+        auto succes = xQueueReceive(mRxQueue, &byte, 0); // return immediately when the queue is empty
+        if (!succes) return mRxIndex;
+
+        mRxBuffer[mRxIndex++] = byte;
+/*
+        N_DEBUG_PRINT("available (");
+        N_DEBUG_PRINT(mRxIndex);
+        N_DEBUG_PRINT(") :");
+        for (size_t j = 0; j < mRxIndex; j++) {
+            N_DEBUG_PRINT("0x");
+            N_DEBUG_PRINT(mRxBuffer[j], HEX);
+            N_DEBUG_PRINT(" ");
+        }
+        N_DEBUG_PRINTLN();
+*/
+        return mRxIndex;
+    }
+    
 
 private:
     void reverse(byte arr[], int n)
@@ -95,6 +114,8 @@ private:
     }
     
 public:
+    QueueHandle_t mRxQueue;
+    
     /*
     The general form of a MIDI message follows:
     n-byte MIDI Message

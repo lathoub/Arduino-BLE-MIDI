@@ -30,9 +30,12 @@ public:
         _characteristic->notify();
     }
     
-	void receive(uint8_t* buffer, uint8_t length)
+	void receive(uint8_t* buffer, size_t length)
 	{
-		_bleMidiTransport->receive(buffer, length);
+        // Post the items to the back of the queue
+        // (drop the first 2 items)
+        for (size_t i = 2; i < length; i++)
+            xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i], portMAX_DELAY);
 	}
 
 	void connected()
@@ -57,12 +60,14 @@ public:
 protected:
 	BLEMIDI_ESP32* _bluetoothEsp32 = nullptr;
 
-    void onConnect(BLEServer* server) {
-		_bluetoothEsp32->connected();
+    void onConnect(BLEServer*) {
+        if (_bluetoothEsp32)
+            _bluetoothEsp32->connected();
     };
     
-    void onDisconnect(BLEServer* server) {
-		_bluetoothEsp32->disconnected();
+    void onDisconnect(BLEServer*) {
+        if (_bluetoothEsp32)
+            _bluetoothEsp32->disconnected();
 	}
 };
 
