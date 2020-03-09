@@ -87,12 +87,12 @@ public:
             // look at l and r pointers and decode by size.
             if( rPtr - lPtr < 1 ) {
                 // Time code or system
-                xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr], portMAX_DELAY);
+                xQueueSend(_bleMidiTransport->mRxQueue, &lastStatus, portMAX_DELAY);
             } else if( rPtr - lPtr < 2 ) {
-                 xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr], portMAX_DELAY);
+                 xQueueSend(_bleMidiTransport->mRxQueue, &lastStatus, portMAX_DELAY);
                  xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr + 1], portMAX_DELAY);
             } else if( rPtr - lPtr < 3 ) {
-                 xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr], portMAX_DELAY);
+                 xQueueSend(_bleMidiTransport->mRxQueue, &lastStatus, portMAX_DELAY);
                  xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr + 1], portMAX_DELAY);
                  xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr + 2], portMAX_DELAY);
             } else {
@@ -107,7 +107,7 @@ public:
                 case 0xE0:
                     for (auto i = lPtr; i < rPtr; i = i + 2)
                     {
-                        xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i], portMAX_DELAY);
+                        xQueueSend(_bleMidiTransport->mRxQueue, &lastStatus, portMAX_DELAY);
                         xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i + 1], portMAX_DELAY);
                         xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i + 2], portMAX_DELAY);
                     }
@@ -116,7 +116,7 @@ public:
                 case 0xD0:
                     for (auto i = lPtr; i < rPtr; i = i + 1)
                     {
-                        xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i], portMAX_DELAY);
+                        xQueueSend(_bleMidiTransport->mRxQueue, &lastStatus, portMAX_DELAY);
                         xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i + 1], portMAX_DELAY);
                     }
                     break;
