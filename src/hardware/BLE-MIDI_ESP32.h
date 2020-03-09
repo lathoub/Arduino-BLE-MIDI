@@ -24,18 +24,80 @@ public:
     
 	bool begin(const char*, BLEMIDI<class BLEMIDI_ESP32>*);
     
-    void write(uint8_t* data, uint8_t length)
+    void write(uint8_t* buffer, size_t length)
     {
-        _characteristic->setValue(data, length);
+        _characteristic->setValue(buffer, length);
         _characteristic->notify();
     }
     
 	void receive(uint8_t* buffer, size_t length)
 	{
-        // Post the items to the back of the queue
-        // (drop the first 2 items)
-        for (size_t i = 2; i < length; i++)
-            xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i], portMAX_DELAY);
+        // Pointers used to search through payload.
+        uint8_t lPtr = 0;
+        uint8_t rPtr = 0;
+        // lastStatus used to capture runningStatus
+        uint8_t lastStatus;
+        // Decode first packet -- SHALL be "Full MIDI message"
+        lPtr = 2; //Start at first MIDI status -- SHALL be "MIDI status"
+        
+        //While statement contains incrementing pointers and breaks when buffer size exceeded.
+        while (true)
+        {
+            lastStatus = buffer[lPtr];
+            
+            if( (buffer[lPtr] < 0x80))
+                return; // Status message not present, bail
+
+            // Point to next non-data byte
+            rPtr = lPtr;
+            while( (buffer[rPtr + 1] < 0x80) && (rPtr < (length - 1)) )
+                rPtr++;
+            if (buffer[rPtr + 1] == 0xF7) rPtr++;
+
+            // look at l and r pointers and decode by size.
+            if( rPtr - lPtr < 1 ) {
+                // Time code or system
+                xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr], portMAX_DELAY);
+            } else if( rPtr - lPtr < 2 ) {
+                 xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr], portMAX_DELAY);
+                 xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr + 1], portMAX_DELAY);
+            } else if( rPtr - lPtr < 3 ) {
+                 xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr], portMAX_DELAY);
+                 xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr + 1], portMAX_DELAY);
+                 xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr + 2], portMAX_DELAY);
+            } else {
+                // Too much data
+                // If not System Common or System Real-Time, send it as running status
+                switch(buffer[lPtr] & 0xF0)
+                {
+                case 0x80:
+                case 0x90:
+                case 0xA0:
+                case 0xB0:
+                case 0xE0:
+             //       for (auto i = lPtr; i < rPtr; i = i + 2)
+               //         transmitMIDIonDIN( lastStatus, buffer[i + 1], buffer[i + 2] );
+                    break;
+                case 0xC0:
+                case 0xD0:
+                 //   for (auto i = lPtr; i < rPtr; i = i + 1)
+                   //     transmitMIDIonDIN( lastStatus, buffer[i + 1], 0 );
+                    break;
+                case 0xF0:
+                    xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr], portMAX_DELAY);
+                    for (auto i = lPtr; i < rPtr; i++)
+                        xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i + 1], portMAX_DELAY);
+                    break;
+                default:
+                    break;
+                }
+            }
+            
+            // Point to next status
+            lPtr = rPtr + 2;
+            if(lPtr >= length)
+                return; //end of packet
+        }
 	}
 
 	void connected()

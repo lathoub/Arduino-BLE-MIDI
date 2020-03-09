@@ -45,6 +45,8 @@ public:
     {
         mBleClass.begin(mDeviceName, this);
 
+        // To communicate between the 2 cores.
+        // Core_0 runs here, core_1 runs the BLE stack
         mRxQueue = xQueueCreate(Settings::MaxBufferSize, sizeof(uint8_t));
     }
 
@@ -99,18 +101,6 @@ public:
         N_DEBUG_PRINTLN();
 */
         return mRxIndex;
-    }
-    
-
-private:
-    void reverse(byte arr[], int n)
-    {
-        for (int low = 0, high = n - 1; low < high; low++, high--)
-        {
-            int temp = arr[low];
-            arr[low] = arr[high];
-            arr[high] = temp;
-        }
     }
     
 public:

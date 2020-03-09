@@ -27,12 +27,12 @@ MIDI_NAMESPACE::MidiInterface<BLEMIDI_t> MIDI((BLEMIDI_t &)Name);
 
 /*! \brief Create an instance for ESP32 named <DeviceName>
 */
-#define BLEMIDI_CREATE_ESP32_INSTANCE(DeviceName)       \
+#define BLEMIDI_CREATE_ESP32_INSTANCE(DeviceName) \
 BLEMIDI_CREATE_INSTANCE(BLEMIDI_NAMESPACE::BLEMIDI_ESP32, DeviceName, bm);
 
 /*! \brief Create a default instance for ESP32 named BLE-MIDI
 */
-#define BLEMIDI_CREATE_DEFAULT_ESP32_INSTANCE()       \
+#define BLEMIDI_CREATE_DEFAULT_ESP32_INSTANCE() \
 BLEMIDI_CREATE_ESP32_INSTANCE("BLE-MIDI")
 
 END_BLEMIDI_NAMESPACE
