@@ -30,6 +30,36 @@ public:
         _characteristic->notify();
     }
     
+    /*
+    The general form of a MIDI message follows:
+    n-byte MIDI Message
+    Byte 0            MIDI message Status byte, Bit 7 is Set to 1.
+    Bytes 1 to n-1    MIDI message Data bytes, if n > 1. Bit 7 is Set to 0
+    There are two types of MIDI messages that can appear in a single packet: full MIDI messages and
+    Running Status MIDI messages. Each is encoded differently.
+    A full MIDI message is simply the MIDI message with the Status byte included.
+    A Running Status MIDI message is a MIDI message with the Status byte omitted. Running Status
+    MIDI messages may only be placed in the data stream if the following criteria are met:
+    1.  The original MIDI message is 2 bytes or greater and is not a System Common or System
+    Real-Time message.
+    2.  The omitted Status byte matches the most recently preceding full MIDI message’s Status
+    byte within the same BLE packet.
+    In addition, the following rules apply with respect to Running Status:
+    1.  A Running Status MIDI message is allowed within the packet after at least one full MIDI
+    message.
+    2.  Every MIDI Status byte must be preceded by a timestamp byte. Running Status MIDI
+    messages may be preceded by a timestamp byte. If a Running Status MIDI message is not
+    preceded by a timestamp byte, the timestamp byte of the most recently preceding message
+    in the same packet is used.
+    3.  System Common and System Real-Time messages do not cancel Running Status if
+    interspersed between Running Status MIDI messages. However, a timestamp byte must
+    precede the Running Status MIDI message that follows.
+    4.  The end of a BLE packet does cancel Running Status.
+    In the MIDI 1.0 protocol, System Real-Time messages can be sent at any time and may be
+    inserted anywhere in a MIDI data stream, including between Status and Data bytes of any other
+    MIDI messages. In the MIDI BLE protocol, the System Real-Time messages must be deinterleaved
+    from other messages – except for System Exclusive messages.
+    */
 	void receive(uint8_t* buffer, size_t length)
 	{
         // Pointers used to search through payload.
@@ -75,13 +105,20 @@ public:
                 case 0xA0:
                 case 0xB0:
                 case 0xE0:
-             //       for (auto i = lPtr; i < rPtr; i = i + 2)
-               //         transmitMIDIonDIN( lastStatus, buffer[i + 1], buffer[i + 2] );
+                    for (auto i = lPtr; i < rPtr; i = i + 2)
+                    {
+                        xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i], portMAX_DELAY);
+                        xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i + 1], portMAX_DELAY);
+                        xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i + 2], portMAX_DELAY);
+                    }
                     break;
                 case 0xC0:
                 case 0xD0:
-                 //   for (auto i = lPtr; i < rPtr; i = i + 1)
-                   //     transmitMIDIonDIN( lastStatus, buffer[i + 1], 0 );
+                    for (auto i = lPtr; i < rPtr; i = i + 1)
+                    {
+                        xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i], portMAX_DELAY);
+                        xQueueSend(_bleMidiTransport->mRxQueue, &buffer[i + 1], portMAX_DELAY);
+                    }
                     break;
                 case 0xF0:
                     xQueueSend(_bleMidiTransport->mRxQueue, &buffer[lPtr], portMAX_DELAY);
