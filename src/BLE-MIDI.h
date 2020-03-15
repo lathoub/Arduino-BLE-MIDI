@@ -33,6 +33,8 @@ private:
 	T mBleClass;
 
 public:
+    const char* getTransportName() { return "BLE-MIDI"; };
+    
 	BLEMIDI(const char* deviceName)
 	{
         strncpy(mDeviceName, deviceName, 24);
@@ -41,6 +43,7 @@ public:
         mTxIndex = 0;
 	}
 
+protected:
     void begin(MIDI_NAMESPACE::Channel inChannel = 1)
     {
         mBleClass.begin(mDeviceName, this);
