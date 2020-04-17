@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include "utility/Logging.h"
-
 #include <MIDI.h>
 using namespace MIDI_NAMESPACE;
 
@@ -32,9 +30,7 @@ private:
 private:
 	T mBleClass;
 
-public:
-    const char* getTransportName() { return "BLE-MIDI"; };
-    
+public:    
 	BLEMIDI(const char* deviceName)
 	{
         strncpy(mDeviceName, deviceName, 24);
@@ -44,7 +40,7 @@ public:
 	}
 
 protected:
-    void begin(MIDI_NAMESPACE::Channel inChannel = 1)
+    void begin()
     {
         mBleClass.begin(mDeviceName, this);
 
@@ -92,17 +88,7 @@ protected:
         if (!succes) return mRxIndex;
 
         mRxBuffer[mRxIndex++] = byte;
-/*
-        N_DEBUG_PRINT("available (");
-        N_DEBUG_PRINT(mRxIndex);
-        N_DEBUG_PRINT(") :");
-        for (size_t j = 0; j < mRxIndex; j++) {
-            N_DEBUG_PRINT("0x");
-            N_DEBUG_PRINT(mRxBuffer[j], HEX);
-            N_DEBUG_PRINT(" ");
-        }
-        N_DEBUG_PRINTLN();
-*/
+
         return mRxIndex;
     }
     
