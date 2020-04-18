@@ -5,9 +5,8 @@
 #######################################
 # Datatypes (KEYWORD1)
 #######################################
-midi_bleTransport	KEYWORD1
-midi_bleTransport.h	KEYWORD1
-Ble_esp32.h	KEYWORD1
+BLE-MIDI.h	KEYWORD1
+BLEMIDI KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -41,10 +40,11 @@ tick	         KEYWORD2
 #######################################
 # Instances (KEYWORD3)
 #######################################
+BLEMIDI KEYWORD3
 
 #######################################
 # Constants (LITERAL1)
 #######################################
 
 # Namespace, considering it as a literal
-blemidi	LITERAL1
+BLEMIDI	LITERAL1

@@ -15,14 +15,14 @@ private:
     BLEAdvertising*		_advertising = nullptr;
     BLECharacteristic*	_characteristic = nullptr;
         
-	BLEMIDI<class BLEMIDI_ESP32>* _bleMidiTransport = nullptr;
+    BLEMIDITransport<class BLEMIDI_ESP32>* _bleMidiTransport = nullptr;
 
 public:
 	BLEMIDI_ESP32()
     {
     }
     
-	bool begin(const char*, BLEMIDI<class BLEMIDI_ESP32>*);
+	bool begin(const char*, BLEMIDITransport<class BLEMIDI_ESP32>*);
     
     void write(uint8_t* buffer, size_t length)
     {
@@ -187,7 +187,7 @@ protected:
     }
 };
 
-bool BLEMIDI_ESP32::begin(const char* deviceName, BLEMIDI<class BLEMIDI_ESP32>* bleMidiTransport)
+bool BLEMIDI_ESP32::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI_ESP32>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 

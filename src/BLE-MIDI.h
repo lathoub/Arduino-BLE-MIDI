@@ -14,9 +14,11 @@ using namespace MIDI_NAMESPACE;
 BEGIN_BLEMIDI_NAMESPACE
 
 template<class T, class _Settings = DefaultSettings>
-class BLEMIDI
+class BLEMIDITransport
 {
     typedef _Settings Settings;
+
+    friend class MIDI_NAMESPACE::MidiInterface<BLEMIDITransport<T>>;
 
 private:
     byte mRxBuffer[Settings::MaxBufferSize];
@@ -31,7 +33,7 @@ private:
 	T mBleClass;
 
 public:    
-	BLEMIDI(const char* deviceName)
+    BLEMIDITransport(const char* deviceName)
 	{
         strncpy(mDeviceName, deviceName, 24);
         
@@ -168,5 +170,21 @@ public:
 	}
 
 };
+
+/*! \brief Create an instance of the library
+ */
+#define BLEMIDI_CREATE_INSTANCE(Type, DeviceName, Name)     \
+BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> BLE##Name(DeviceName); \
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32>> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> &)BLE##Name);
+
+ /*! \brief Create an instance for ESP32 named <DeviceName>
+ */
+#define BLEMIDI_CREATE_ESP32_INSTANCE(DeviceName) \
+BLEMIDI_CREATE_INSTANCE(BLEMIDI_NAMESPACE::BLEMIDI_ESP32, DeviceName, MIDI);
+
+ /*! \brief Create a default instance for ESP32 named BLE-MIDI
+ */
+#define BLEMIDI_CREATE_DEFAULT_ESP32_INSTANCE() \
+BLEMIDI_CREATE_ESP32_INSTANCE("BLE-MIDI")
 
 END_BLEMIDI_NAMESPACE
