@@ -41,7 +41,9 @@ public:
         mTxIndex = 0;
 	}
 
-protected:
+protected:	
+    static const bool thruActivated = false;
+	
     void begin()
     {
         mBleClass.begin(mDeviceName, this);
