@@ -18,8 +18,6 @@ class BLEMIDITransport
 {
     typedef _Settings Settings;
 
-    friend class MIDI_NAMESPACE::MidiInterface<BLEMIDITransport<T>>;
-
 private:
     byte mRxBuffer[Settings::MaxBufferSize];
     unsigned mRxIndex = 0;
@@ -41,7 +39,7 @@ public:
         mTxIndex = 0;
 	}
 
-protected:	
+public:	
     static const bool thruActivated = false;
 	
     void begin()
@@ -173,11 +171,18 @@ public:
 
 };
 
+END_BLEMIDI_NAMESPACE
+
+ struct MySettings : public MIDI_NAMESPACE::DefaultSettings
+ {
+    static const bool Use1ByteParsing = false;
+ };
+
 /*! \brief Create an instance of the library
  */
 #define BLEMIDI_CREATE_INSTANCE(Type, DeviceName, Name)     \
 BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32>> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> &)BLE##Name);
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> &)BLE##Name);
 
  /*! \brief Create an instance for ESP32 named <DeviceName>
  */
@@ -188,5 +193,3 @@ BLEMIDI_CREATE_INSTANCE(BLEMIDI_NAMESPACE::BLEMIDI_ESP32, DeviceName, MIDI);
  */
 #define BLEMIDI_CREATE_DEFAULT_ESP32_INSTANCE() \
 BLEMIDI_CREATE_ESP32_INSTANCE("BLE-MIDI")
-
-END_BLEMIDI_NAMESPACE
