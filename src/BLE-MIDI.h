@@ -48,7 +48,7 @@ public:
 
         // To communicate between the 2 cores.
         // Core_0 runs here, core_1 runs the BLE stack
-        mRxQueue = xQueueCreate(Settings::MaxBufferSize, sizeof(uint8_t));
+//        mRxQueue = xQueueCreate(Settings::MaxBufferSize, sizeof(uint8_t));
     }
 
     bool beginTransmission(MidiType)
@@ -86,7 +86,7 @@ public:
     unsigned available()
     {
         uint8_t byte;
-        auto succes = xQueueReceive(mRxQueue, &byte, 0); // return immediately when the queue is empty
+        auto succes = mBleClass.available(&byte); // xQueueReceive(mRxQueue, &byte, 0); // return immediately when the queue is empty
         if (!succes) return mRxIndex;
 
         mRxBuffer[mRxIndex++] = byte;
@@ -95,7 +95,7 @@ public:
     }
     
 public:
-    QueueHandle_t mRxQueue;
+//    QueueHandle_t mRxQueue;
     
 protected:
     /*
@@ -161,11 +161,11 @@ public:
 	void(*_disconnectedCallback)() = nullptr;
 
 public:
-	void onConnected(void(*fptr)()) {
+	void setHandleConnected(void(*fptr)()) {
 		_connectedCallback = fptr;
 	}
 
-	void onDisconnected(void(*fptr)()) {
+	void setHandleDisconnected(void(*fptr)()) {
 		_disconnectedCallback = fptr;
 	}
 
@@ -173,23 +173,8 @@ public:
 
 END_BLEMIDI_NAMESPACE
 
- struct MySettings : public MIDI_NAMESPACE::DefaultSettings
- {
+struct MySettings : public MIDI_NAMESPACE::DefaultSettings
+{
     static const bool Use1ByteParsing = false;
- };
+};
 
-/*! \brief Create an instance of the library
- */
-#define BLEMIDI_CREATE_INSTANCE(Type, DeviceName, Name)     \
-BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> &)BLE##Name);
-
- /*! \brief Create an instance for ESP32 named <DeviceName>
- */
-#define BLEMIDI_CREATE_ESP32_INSTANCE(DeviceName) \
-BLEMIDI_CREATE_INSTANCE(BLEMIDI_NAMESPACE::BLEMIDI_ESP32, DeviceName, MIDI);
-
- /*! \brief Create a default instance for ESP32 named BLE-MIDI
- */
-#define BLEMIDI_CREATE_DEFAULT_ESP32_INSTANCE() \
-BLEMIDI_CREATE_ESP32_INSTANCE("BLE-MIDI")

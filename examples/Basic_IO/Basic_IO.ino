@@ -1,11 +1,11 @@
 #include <BLE-MIDI.h>
-#include <hardware/BLE-MIDI_ESP32.h>
+#include <hardware/ESP32.h>
 
 // Simple tutorial on how to receive and send MIDI messages.
 // Here, when receiving any message on channel 4, the Arduino
 // will blink a led and play back a note for 1 second.
 
-BLEMIDI_CREATE_DEFAULT_ESP32_INSTANCE()
+BLEMIDI_CREATE_DEFAULT_INSTANCE()
 
 void setup()
 {
