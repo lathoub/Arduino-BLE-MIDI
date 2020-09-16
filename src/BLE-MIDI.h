@@ -45,10 +45,6 @@ public:
     void begin()
     {
         mBleClass.begin(mDeviceName, this);
-
-        // To communicate between the 2 cores.
-        // Core_0 runs here, core_1 runs the BLE stack
-//        mRxQueue = xQueueCreate(Settings::MaxBufferSize, sizeof(uint8_t));
     }
 
     bool beginTransmission(MidiType)
@@ -86,17 +82,14 @@ public:
     unsigned available()
     {
         uint8_t byte;
-        auto succes = mBleClass.available(&byte); // xQueueReceive(mRxQueue, &byte, 0); // return immediately when the queue is empty
+        auto succes = mBleClass.available(&byte);
         if (!succes) return mRxIndex;
 
         mRxBuffer[mRxIndex++] = byte;
 
         return mRxIndex;
     }
-    
-public:
-//    QueueHandle_t mRxQueue;
-    
+       
 protected:
     /*
      The first byte of all BLE packets must be a header byte. This is followed by timestamp bytes and MIDI messages.

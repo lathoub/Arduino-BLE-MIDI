@@ -1,5 +1,6 @@
 #include <BLE-MIDI.h>
-#include <hardware/ESP32.h>
+#include <hardware/ESP32_NimBLE.h>
+//#include <hardware/ESP32.h>
 //#include <hardware/nRF52.h>
 
 BLEMIDI_CREATE_DEFAULT_INSTANCE()
