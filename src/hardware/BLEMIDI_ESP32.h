@@ -1,18 +1,21 @@
 #pragma once
 
-// Headers for ESP32 NimBLE
-#include <NimBLEDevice.h>
+// Headers for ESP32 BLE
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEServer.h>
+#include <BLE2902.h>
 
 BEGIN_BLEMIDI_NAMESPACE
 
-class BLEMIDI
+class BLEMIDI_ESP32
 {
 private:
     BLEServer*			_server = nullptr;
     BLEAdvertising*		_advertising = nullptr;
     BLECharacteristic*	_characteristic = nullptr;
         
-    BLEMIDITransport<class BLEMIDI>* _bleMidiTransport = nullptr;
+    BLEMIDITransport<class BLEMIDI_ESP32>* _bleMidiTransport = nullptr;
 
     friend class MyServerCallbacks; 
     friend class MyCharacteristicCallbacks; 
@@ -21,11 +24,11 @@ protected:
     QueueHandle_t mRxQueue;
 
 public:
-	BLEMIDI()
+	BLEMIDI_ESP32()
     {
     }
     
-	bool begin(const char*, BLEMIDITransport<class BLEMIDI>*);
+	bool begin(const char*, BLEMIDITransport<class BLEMIDI_ESP32>*);
     
     void write(uint8_t* buffer, size_t length)
     {
@@ -33,7 +36,7 @@ public:
         _characteristic->notify();
     }
     
-    size_t available(void *pvBuffer)
+    bool available(void *pvBuffer)
     {
         return xQueueReceive(mRxQueue, pvBuffer, 0); // return immediately when the queue is empty
     }
@@ -66,12 +69,12 @@ protected:
 
 class MyServerCallbacks: public BLEServerCallbacks {
 public:
-    MyServerCallbacks(BLEMIDI* bluetoothEsp32)
+    MyServerCallbacks(BLEMIDI_ESP32* bluetoothEsp32)
         : _bluetoothEsp32(bluetoothEsp32) {
     }
 
 protected:
-	BLEMIDI* _bluetoothEsp32 = nullptr;
+	BLEMIDI_ESP32* _bluetoothEsp32 = nullptr;
 
     void onConnect(BLEServer*) {
         if (_bluetoothEsp32)
@@ -86,12 +89,12 @@ protected:
 
 class MyCharacteristicCallbacks: public BLECharacteristicCallbacks {
 public:
-    MyCharacteristicCallbacks(BLEMIDI* bluetoothEsp32)
+    MyCharacteristicCallbacks(BLEMIDI_ESP32* bluetoothEsp32)
         : _bluetoothEsp32(bluetoothEsp32 ) {
     }
     
 protected:
-	BLEMIDI* _bluetoothEsp32 = nullptr;
+	BLEMIDI_ESP32* _bluetoothEsp32 = nullptr;
 
     void onWrite(BLECharacteristic * characteristic) {
         std::string rxValue = characteristic->getValue();
@@ -101,7 +104,7 @@ protected:
     }
 };
 
-bool BLEMIDI::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI>* bleMidiTransport)
+bool BLEMIDI_ESP32::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI_ESP32>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 
@@ -120,11 +123,13 @@ bool BLEMIDI::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI>* ble
     // Create a BLE Characteristic
     _characteristic = service->createCharacteristic(
                                                      BLEUUID(CHARACTERISTIC_UUID),
-                                                     NIMBLE_PROPERTY::READ   |
-                                                     NIMBLE_PROPERTY::WRITE  |
-                                                     NIMBLE_PROPERTY::NOTIFY |
-                                                     NIMBLE_PROPERTY::WRITE_NR
+                                                     BLECharacteristic::PROPERTY_READ   |
+                                                     BLECharacteristic::PROPERTY_WRITE  |
+                                                     BLECharacteristic::PROPERTY_NOTIFY |
+                                                     BLECharacteristic::PROPERTY_WRITE_NR
                                                      );
+    // Add CCCD 0x2902 to allow notify
+    _characteristic->addDescriptor(new BLE2902());
 
     _characteristic->setCallbacks(new MyCharacteristicCallbacks(this));
     // Start the service
@@ -146,8 +151,8 @@ bool BLEMIDI::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI>* ble
  /*! \brief Create an instance for ESP32 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI> &)BLE##Name);
+BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> BLE##Name(DeviceName); \
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> &)BLE##Name);
 
  /*! \brief Create a default instance for ESP32 named BLE-MIDI
  */

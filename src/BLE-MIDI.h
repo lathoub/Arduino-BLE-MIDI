@@ -277,4 +277,3 @@ struct MySettings : public MIDI_NAMESPACE::DefaultSettings
 {
     static const bool Use1ByteParsing = false;
 };
-
