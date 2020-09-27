@@ -10,20 +10,70 @@ BLEStringCharacteristic midiChar(CHARACTERISTIC_UUID,  // standard 16-bit charac
 
 BEGIN_BLEMIDI_NAMESPACE
 
-class BLEMIDI
+template<typename T, int rawSize>
+class Fifo {
+public:
+	const size_t size;				//speculative feature, in case it's needed
+
+	Fifo(): size(rawSize) 
+    {
+	    flush();
+    }
+
+	T dequeue()
+    {
+        numberOfElements--;
+        nextOut %= size;
+        return raw[ nextOut++];
+    };
+	
+    bool enqueue( T element )
+    {
+        if ( count() >= rawSize )
+            return false;
+
+        numberOfElements++;
+        nextIn %= size;
+        raw[nextIn] = element;
+        nextIn++; //advance to next index
+
+        return true;
+    };
+
+    T peek() const
+    {
+	    return raw[ nextOut % size];
+    }
+
+    void flush()
+    {
+	    nextIn = nextOut = numberOfElements = 0;
+    }
+
+	// how many elements are currently in the FIFO?
+	size_t count() { return numberOfElements; }
+
+private:
+    size_t numberOfElements;
+    size_t nextIn;
+    size_t nextOut;
+    T raw[rawSize];
+};
+
+class BLEMIDI_ArduinoBLE
 {
 private:   
-    static BLEMIDITransport<class BLEMIDI>* _bleMidiTransport;
+    static BLEMIDITransport<class BLEMIDI_ArduinoBLE>* _bleMidiTransport;
     static BLEDevice* _central;
 
-//    byte mRxBuffer[Settings::MaxBufferSize];
+    Fifo<byte, 64> mRxBuffer;
 
 public:
-	BLEMIDI()
+	BLEMIDI_ArduinoBLE()
     {
     }
     
-	bool begin(const char*, BLEMIDITransport<class BLEMIDI>*);
+	bool begin(const char*, BLEMIDITransport<class BLEMIDI_ArduinoBLE>*);
     
     void write(uint8_t* buffer, size_t length)
     {
@@ -31,9 +81,16 @@ public:
         ((BLECharacteristic)midiChar).writeValue(buffer, length);
     }
     
-    size_t available(uint8_t* buffer, const size_t index,  const size_t max)
+    bool available(byte* pvBuffer)
     {
  #ifdef BLE_POLLING
+
+        if (mRxBuffer.count() > 0) {
+            *pvBuffer = mRxBuffer.dequeue();
+
+            return true;
+        }
+
         poll();
     
         if (midiChar.written()) {
@@ -41,60 +98,30 @@ public:
             auto length = midiChar.valueLength();
 
             if (length > 0) {
-                // TODO: test length
-                memcpy(buffer + index, midiChar.value().c_str(), length);
-                return length;
+                auto buffer = midiChar.value().c_str();
+                _bleMidiTransport->receive((byte*)buffer, length);
+ 
             }
         }
+        return false;
 #endif
 #ifdef BLE_EVENTS
 /      BLE.poll();
-        return 0;
+        return ; // ??
 #endif
     }
 
-    void read()
+    void add(byte value)
     {
+        // called from BLE-MIDI, to add it to a buffer here
+        mRxBuffer.enqueue(value);
     }
 
-    /*
-    The general form of a MIDI message follows:
-    n-byte MIDI Message
-    Byte 0            MIDI message Status byte, Bit 7 is Set to 1.
-    Bytes 1 to n-1    MIDI message Data bytes, if n > 1. Bit 7 is Set to 0
-    There are two types of MIDI messages that can appear in a single packet: full MIDI messages and
-    Running Status MIDI messages. Each is encoded differently.
-    A full MIDI message is simply the MIDI message with the Status byte included.
-    A Running Status MIDI message is a MIDI message with the Status byte omitted. Running Status
-    MIDI messages may only be placed in the data stream if the following criteria are met:
-    1.  The original MIDI message is 2 bytes or greater and is not a System Common or System
-    Real-Time message.
-    2.  The omitted Status byte matches the most recently preceding full MIDI message’s Status
-    byte within the same BLE packet.
-    In addition, the following rules apply with respect to Running Status:
-    1.  A Running Status MIDI message is allowed within the packet after at least one full MIDI
-    message.
-    2.  Every MIDI Status byte must be preceded by a timestamp byte. Running Status MIDI
-    messages may be preceded by a timestamp byte. If a Running Status MIDI message is not
-    preceded by a timestamp byte, the timestamp byte of the most recently preceding message
-    in the same packet is used.
-    3.  System Common and System Real-Time messages do not cancel Running Status if
-    interspersed between Running Status MIDI messages. However, a timestamp byte must
-    precede the Running Status MIDI message that follows.
-    4.  The end of a BLE packet does cancel Running Status.
-    In the MIDI 1.0 protocol, System Real-Time messages can be sent at any time and may be
-    inserted anywhere in a MIDI data stream, including between Status and Data bytes of any other
-    MIDI messages. In the MIDI BLE protocol, the System Real-Time messages must be deinterleaved
-    from other messages – except for System Exclusive messages.
-    */
-	static void receive(const uint8_t* buffer, size_t length)
+protected:
+	static void receive(const unsigned char* buffer, size_t length)
 	{
-        Serial.print("receive: ");
-        for (int i = 0; i < length; i++) {
-            Serial.print(" 0x");
-            Serial.print(buffer[i], HEX);
-        }
-        Serial.println("");
+        // forward the buffer so it can be parsed
+        _bleMidiTransport->receive((uint8_t*)buffer, length);
 	}
 
 	bool poll()
@@ -102,7 +129,7 @@ public:
         BLEDevice central = BLE.central();
         if (!central) {
             if (_central) {
-                BLEMIDI::blePeripheralDisconnectHandler(*_central);
+                BLEMIDI_ArduinoBLE::blePeripheralDisconnectHandler(*_central);
                 _central = nullptr;
             }
             return false;
@@ -113,13 +140,13 @@ public:
         }
 
         if (nullptr == _central) {
-            BLEMIDI::blePeripheralConnectHandler(central);
+            BLEMIDI_ArduinoBLE::blePeripheralConnectHandler(central);
             _central = &central;
         }
         else {
             if (*_central != central) {
-                BLEMIDI::blePeripheralDisconnectHandler(*_central);
-                BLEMIDI::blePeripheralConnectHandler(central);
+                BLEMIDI_ArduinoBLE::blePeripheralDisconnectHandler(*_central);
+                BLEMIDI_ArduinoBLE::blePeripheralConnectHandler(central);
                 _central = &central;
             } 
         }
@@ -150,10 +177,10 @@ public:
     }
 };
 
-BLEMIDITransport<class BLEMIDI>* BLEMIDI::_bleMidiTransport = nullptr;
-BLEDevice* BLEMIDI::_central = nullptr;
+BLEMIDITransport<class BLEMIDI_ArduinoBLE>* BLEMIDI_ArduinoBLE::_bleMidiTransport = nullptr;
+BLEDevice* BLEMIDI_ArduinoBLE::_central = nullptr;
 
-bool BLEMIDI::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI>* bleMidiTransport)
+bool BLEMIDI_ArduinoBLE::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI_ArduinoBLE>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 
@@ -168,8 +195,8 @@ bool BLEMIDI::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI>* ble
 
 #ifdef BLE_EVENTS
     // assign event handlers for connected, disconnected to peripheral
-    BLE.setEventHandler(BLEConnected,    BLEMIDI::blePeripheralConnectHandler);
-    BLE.setEventHandler(BLEDisconnected, BLEMIDI::blePeripheralDisconnectHandler);
+    BLE.setEventHandler(BLEConnected,    BLEMIDI_ArduinoBLE::blePeripheralConnectHandler);
+    BLE.setEventHandler(BLEDisconnected, BLEMIDI_ArduinoBLE::blePeripheralDisconnectHandler);
 
     midiChar.setEventHandler(BLEWritten, characteristicWritten);
 #endif
@@ -187,8 +214,8 @@ bool BLEMIDI::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI>* ble
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI> &)BLE##Name);
+BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> BLE##Name(DeviceName); \
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> &)BLE##Name);
 
  /*! \brief Create a default instance for nRF52 named BLE-MIDI
  */

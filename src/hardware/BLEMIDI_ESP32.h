@@ -36,15 +36,15 @@ public:
         _characteristic->notify();
     }
     
-    bool available(void *pvBuffer)
+    bool available(byte* pvBuffer)
     {
         return xQueueReceive(mRxQueue, pvBuffer, 0); // return immediately when the queue is empty
     }
 
-    void add(const void* value)
+    void add(byte value)
     {
         // called from BLE-MIDI, to add it to a buffer here
-        xQueueSend(mRxQueue, value, portMAX_DELAY);
+        xQueueSend(mRxQueue, &value, portMAX_DELAY);
     }
 
 protected:

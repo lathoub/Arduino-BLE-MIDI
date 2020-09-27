@@ -33,21 +33,22 @@ public:
         _characteristic->notify();
     }
     
-    size_t available(void *pvBuffer)
+    bool available(byte* pvBuffer)
     {
-        return xQueueReceive(mRxQueue, pvBuffer, 0); // return immediately when the queue is empty
+        // return 1 byte from the Queue
+        return xQueueReceive(mRxQueue, (void*)pvBuffer, 0); // return immediately when the queue is empty
     }
 
-    void add(const void* value)
+    void add(byte value)
     {
         // called from BLE-MIDI, to add it to a buffer here
-        xQueueSend(mRxQueue, value, portMAX_DELAY);
+        xQueueSend(mRxQueue, &value, portMAX_DELAY);
     }
 
 protected:
 	void receive(uint8_t* buffer, size_t length)
 	{
-        // parse the incoming buffer
+        // forward the buffer so it can be parsed
         _bleMidiTransport->receive(buffer, length);
 	}
 

@@ -82,8 +82,8 @@ public:
     unsigned available()
     {
         uint8_t byte;
-        auto succes = mBleClass.available(&byte);
-        if (!succes) return mRxIndex;
+        auto success = mBleClass.available(&byte);
+        if (!success) return mRxIndex;
 
         mRxBuffer[mRxIndex++] = byte;
 
@@ -192,13 +192,13 @@ public:
     MIDI messages. In the MIDI BLE protocol, the System Real-Time messages must be deinterleaved
     from other messages – except for System Exclusive messages.
     */
-	void receive(uint8_t* buffer, size_t length)
+	void receive(byte* buffer, size_t length)
 	{
         // Pointers used to search through payload.
-        uint8_t lPtr = 0;
-        uint8_t rPtr = 0;
+        byte lPtr = 0;
+        byte rPtr = 0;
         // lastStatus used to capture runningStatus
-        uint8_t lastStatus;
+        byte lastStatus;
         // Decode first packet -- SHALL be "Full MIDI message"
         lPtr = 2; //Start at first MIDI status -- SHALL be "MIDI status"
         
@@ -219,14 +219,14 @@ public:
             // look at l and r pointers and decode by size.
             if( rPtr - lPtr < 1 ) {
                 // Time code or system
-                mBleClass.add(&lastStatus);
+                mBleClass.add(lastStatus);
             } else if( rPtr - lPtr < 2 ) {
-                mBleClass.add(&lastStatus);
-                mBleClass.add(&buffer[lPtr + 1]);
+                mBleClass.add(lastStatus);
+                mBleClass.add(buffer[lPtr + 1]);
             } else if( rPtr - lPtr < 3 ) {
-                mBleClass.add(&lastStatus);
-                mBleClass.add(&buffer[lPtr + 1]);
-                mBleClass.add(&buffer[lPtr + 2]);
+                mBleClass.add(lastStatus);
+                mBleClass.add(buffer[lPtr + 1]);
+                mBleClass.add(buffer[lPtr + 2]);
             } else {
                 // Too much data
                 // If not System Common or System Real-Time, send it as running status
@@ -239,23 +239,23 @@ public:
                 case 0xE0:
                     for (auto i = lPtr; i < rPtr; i = i + 2)
                     {
-                        mBleClass.add(&lastStatus);
-                        mBleClass.add(&buffer[i + 1]);
-                        mBleClass.add(&buffer[i + 2]);
+                        mBleClass.add(lastStatus);
+                        mBleClass.add(buffer[i + 1]);
+                        mBleClass.add(buffer[i + 2]);
                     }
                     break;
                 case 0xC0:
                 case 0xD0:
                     for (auto i = lPtr; i < rPtr; i = i + 1)
                     {
-                        mBleClass.add(&lastStatus);
-                        mBleClass.add(&buffer[i + 1]);
+                        mBleClass.add(lastStatus);
+                        mBleClass.add(buffer[i + 1]);
                     }
                     break;
                 case 0xF0:
-                    mBleClass.add(&buffer[lPtr]);
+                    mBleClass.add(buffer[lPtr]);
                     for (auto i = lPtr; i < rPtr; i++)
-                        mBleClass.add(&buffer[i + 1]);
+                        mBleClass.add(buffer[i + 1]);
                     break;
                 default:
                     break;
