@@ -7,6 +7,7 @@
 BLEMIDI_CREATE_DEFAULT_INSTANCE()
 
 unsigned long t0 = millis();
+unsigned long t1 = millis();
 bool isConnected = false;
 
 // -----------------------------------------------------------------------------
@@ -14,7 +15,7 @@ bool isConnected = false;
 // -----------------------------------------------------------------------------
 void setup()
 {
-  Serial.begin(9600);    // initialize serial communication
+  Serial.begin(115200);    // initialize serial communication
   while (!Serial);
 
   MIDI.begin();
@@ -42,8 +43,13 @@ void loop()
   {
     t0 = millis();
 
-  //  MIDI.sendNoteOn (60, 100, 1); // note 60, velocity 127 on channel 1
-  //  MIDI.sendNoteOff(60,   0, 1);
+    MIDI.sendNoteOn (60, 100, 1); // note 60, velocity 127 on channel 1
+  }
+  if (isConnected && (millis() - t1) > 1250)
+  {
+    t1 = millis();
+
+    MIDI.sendNoteOff(60,   0, 1);
   }
 }
 

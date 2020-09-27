@@ -30,28 +30,9 @@ public:
         _characteristic->notify();
     }
     
-    size_t available(uint8_t* buffer, size_t index,  const size_t max)
+    size_t available(void *pvBuffer)
     {
-        size_t length = uxQueueMessagesWaiting(mRxQueue);
-        if (0 == length) return 0;
-
-        Serial.print("nimBLE available: ");
-
-        while (xQueueReceive(mRxQueue, buffer + index++, 0))
-        {
-            Serial.print(" 0x");
-            Serial.print(buffer[index], HEX);
-            index++;
-        }
-        Serial.println("");
-
-        if (length > 0)
-        {
-            Serial.print("index: ");
-            Serial.println(length);
-        }
-
-        return length;
+        return xQueueReceive(mRxQueue, pvBuffer, 0); // return immediately when the queue is empty
     }
 
     /*
