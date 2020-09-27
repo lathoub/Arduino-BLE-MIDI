@@ -1,6 +1,6 @@
 #include <BLE-MIDI.h>
-#include <hardware/MIDI_ESP32_NimBLE.h>
-//#include <hardware/MIDI_ESP32.h>
+//#include <hardware/MIDI_ESP32_NimBLE.h>
+#include <hardware/MIDI_ESP32.h>
 //#include <hardware/MIDI_nRF52.h>
 //#include <hardware/MIDI_ArduinoBLE.h>
 
@@ -15,7 +15,7 @@ bool isConnected = false;
 // -----------------------------------------------------------------------------
 void setup()
 {
-  Serial.begin(115200);    // initialize serial communication
+  Serial.begin(115200);
   while (!Serial);
 
   MIDI.begin();
