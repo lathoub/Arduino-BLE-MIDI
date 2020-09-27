@@ -1,7 +1,8 @@
 #include <BLE-MIDI.h>
-#include <hardware/ESP32_NimBLE.h>
-//#include <hardware/ESP32.h>
-//#include <hardware/nRF52.h>
+#include <hardware/MIDI_ESP32_NimBLE.h>
+//#include <hardware/MIDI_ESP32.h>
+//#include <hardware/MIDI_nRF52.h>
+//#include <hardware/MIDI_ArduinoBLE.h>
 
 BLEMIDI_CREATE_DEFAULT_INSTANCE()
 
@@ -13,19 +14,21 @@ bool isConnected = false;
 // -----------------------------------------------------------------------------
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600);    // initialize serial communication
   while (!Serial);
-  Serial.println("Booting");
-  
+
   MIDI.begin();
+
+  Serial.println("booting!");
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
 
   BLEMIDI.setHandleConnected(OnConnected);
   BLEMIDI.setHandleDisconnected(OnDisconnected);
 
   MIDI.setHandleNoteOn(OnNoteOn);
   MIDI.setHandleNoteOff(OnNoteOff);
-
-  Serial.println(F("Ready"));
 }
 
 // -----------------------------------------------------------------------------
@@ -39,8 +42,8 @@ void loop()
   {
     t0 = millis();
 
-    MIDI.sendNoteOn(60, 127, 1); // note 60, velocity 127 on channel 1
-    MIDI.sendNoteOff(60, 0, 1);
+  //  MIDI.sendNoteOn (60, 100, 1); // note 60, velocity 127 on channel 1
+  //  MIDI.sendNoteOff(60,   0, 1);
   }
 }
 
@@ -52,40 +55,30 @@ void loop()
 // Device connected
 // -----------------------------------------------------------------------------
 void OnConnected() {
-  Serial.println(F("Connected"));
   isConnected = true;
+  digitalWrite(LED_BUILTIN, HIGH);
+  Serial.println("connected!");
 }
 
 // -----------------------------------------------------------------------------
 // Device disconnected
 // -----------------------------------------------------------------------------
 void OnDisconnected() {
-  Serial.println(F("Disconnected"));
   isConnected = false;
+  digitalWrite(LED_BUILTIN, LOW);
+  Serial.println("disconnected!");
 }
 
 // -----------------------------------------------------------------------------
 // Received note on
 // -----------------------------------------------------------------------------
 void OnNoteOn(byte channel, byte note, byte velocity) {
-  Serial.print(F("Incoming NoteOn  from channel:"));
-  Serial.print(channel);
-  Serial.print(F(" note:"));
-  Serial.print(note);
-  Serial.print(F(" velocity:"));
-  Serial.print(velocity);
-  Serial.println();
+  Serial.println("note on");
 }
 
 // -----------------------------------------------------------------------------
 // Received note off
 // -----------------------------------------------------------------------------
 void OnNoteOff(byte channel, byte note, byte velocity) {
-  Serial.print(F("Incoming NoteOff from channel:"));
-  Serial.print(channel);
-  Serial.print(F(" note:"));
-  Serial.print(note);
-  Serial.print(F(" velocity:"));
-  Serial.print(velocity);
-  Serial.println();
+  Serial.println("note off");
 }

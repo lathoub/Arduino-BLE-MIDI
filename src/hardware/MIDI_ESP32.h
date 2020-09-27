@@ -8,24 +8,24 @@
 
 BEGIN_BLEMIDI_NAMESPACE
 
-class BLEMIDI_ESP32
+class BLEMIDI
 {
 private:
     BLEServer*			_server = nullptr;
     BLEAdvertising*		_advertising = nullptr;
     BLECharacteristic*	_characteristic = nullptr;
         
-    BLEMIDITransport<class BLEMIDI_ESP32>* _bleMidiTransport = nullptr;
+    BLEMIDITransport<class BLEMIDI>* _bleMidiTransport = nullptr;
 
 protected:
     QueueHandle_t mRxQueue;
 
 public:
-	BLEMIDI_ESP32()
+	BLEMIDI()
     {
     }
     
-	bool begin(const char*, BLEMIDITransport<class BLEMIDI_ESP32>*);
+	bool begin(const char*, BLEMIDITransport<class BLEMIDI>*);
     
     void write(uint8_t* buffer, size_t length)
     {
@@ -78,7 +78,7 @@ public:
         // Decode first packet -- SHALL be "Full MIDI message"
         lPtr = 2; //Start at first MIDI status -- SHALL be "MIDI status"
         
-        //While statement contains incrementing pointers and breaks when buffer size exceeded.
+        // While statement contains incrementing pointers and breaks when buffer size exceeded.
         while (true)
         {
             lastStatus = buffer[lPtr];
@@ -160,12 +160,12 @@ public:
 
 class MyServerCallbacks: public BLEServerCallbacks {
 public:
-    MyServerCallbacks(BLEMIDI_ESP32* bluetoothEsp32)
+    MyServerCallbacks(BLEMIDI* bluetoothEsp32)
         : _bluetoothEsp32(bluetoothEsp32) {
     }
 
 protected:
-	BLEMIDI_ESP32* _bluetoothEsp32 = nullptr;
+	BLEMIDI* _bluetoothEsp32 = nullptr;
 
     void onConnect(BLEServer*) {
         if (_bluetoothEsp32)
@@ -180,12 +180,12 @@ protected:
 
 class MyCharacteristicCallbacks: public BLECharacteristicCallbacks {
 public:
-    MyCharacteristicCallbacks(BLEMIDI_ESP32* bluetoothEsp32)
+    MyCharacteristicCallbacks(BLEMIDI* bluetoothEsp32)
         : _bluetoothEsp32(bluetoothEsp32 ) {
     }
     
 protected:
-	BLEMIDI_ESP32* _bluetoothEsp32 = nullptr;
+	BLEMIDI* _bluetoothEsp32 = nullptr;
 
     void onWrite(BLECharacteristic * characteristic) {
         std::string rxValue = characteristic->getValue();
@@ -195,7 +195,7 @@ protected:
     }
 };
 
-bool BLEMIDI_ESP32::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI_ESP32>* bleMidiTransport)
+bool BLEMIDI::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 
@@ -242,8 +242,8 @@ bool BLEMIDI_ESP32::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI
  /*! \brief Create an instance for ESP32 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> &)BLE##Name);
+BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI> BLE##Name(DeviceName); \
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI> &)BLE##Name);
 
  /*! \brief Create a default instance for ESP32 named BLE-MIDI
  */

@@ -6,18 +6,18 @@
 
 BEGIN_BLEMIDI_NAMESPACE
 
-class BLEMIDI_nRF52
+class BLEMIDI
 {
 private:
         
-    BLEMIDITransport<class BLEMIDI_nRF52>* _bleMidiTransport = nullptr;
+    BLEMIDITransport<class BLEMIDI>* _bleMidiTransport = nullptr;
 
 public:
-	BLEMIDI_nRF52()
+	BLEMIDI()
     {
     }
     
-	bool begin(const char*, BLEMIDITransport<class BLEMIDI_nRF52>*);
+	bool begin(const char*, BLEMIDITransport<class BLEMIDI>*);
     
     void write(uint8_t* buffer, size_t length)
     {
@@ -70,7 +70,7 @@ public:
 	}
 };
 
-bool BLEMIDI_nRF52::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI_nRF52>* bleMidiTransport)
+bool BLEMIDI::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 
@@ -125,8 +125,8 @@ bool BLEMIDI_nRF52::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52> &)BLE##Name);
+BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI> BLE##Name(DeviceName); \
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI> &)BLE##Name);
 
  /*! \brief Create a default instance for nRF52 named BLE-MIDI
  */
