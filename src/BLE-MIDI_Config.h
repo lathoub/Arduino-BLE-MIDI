@@ -10,6 +10,6 @@
 #endif
 
 
-//#ifdef BBB 
+#ifdef BBB 
 #include <hardware/BLEMIDI_ArduinoBLE.h>
-//#endif
+#endif
