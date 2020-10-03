@@ -64,6 +64,11 @@ public:
             // if we approach the end of the buffer, chop-up in segments until
             // we reach F7 (end of SysEx)
         }
+
+        if (inData == MidiType::SystemExclusiveEnd)
+        {
+            mTxBuffer[mTxIndex++] = mTxBuffer[1];
+        }
         
         mTxBuffer[mTxIndex++] = inData;
     }
