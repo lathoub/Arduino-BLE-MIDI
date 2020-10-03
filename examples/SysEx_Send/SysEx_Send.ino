@@ -41,13 +41,13 @@ bool isConnected = false;
 // -----------------------------------------------------------------------------
 void setup()
 {
-  MIDI.begin();
-
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
   BLEMIDI.setHandleConnected(OnConnected);
   BLEMIDI.setHandleDisconnected(OnDisconnected);
+
+  MIDI.begin();
 }
 
 // -----------------------------------------------------------------------------

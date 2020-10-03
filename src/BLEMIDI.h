@@ -27,7 +27,6 @@ private:
     
     char mDeviceName[24];
 
-    bool mIsSysEx;
     uint8_t mTimestampLow;
 
 private:
@@ -54,7 +53,7 @@ public:
     {
         getMidiTimestamp(&mTxBuffer[0], &mTxBuffer[1]);
         mTxIndex = 2;
-        mTimestampLow = mTxBuffer[1];
+        mTimestampLow = mTxBuffer[1]; // or generate new ?
       
         return true;
     }
@@ -72,21 +71,21 @@ public:
 
     void endTransmission()
     {
-    if (mTxBuffer[mTxIndex - 1] == 0xF7)
-    {
-        if (mTxIndex >= sizeof(mTxBuffer))
+        if (mTxBuffer[mTxIndex - 1] == 0xF7)
         {
-            mBleClass.write(mTxBuffer, mTxIndex - 1);
+            if (mTxIndex >= sizeof(mTxBuffer))
+            {
+                mBleClass.write(mTxBuffer, mTxIndex - 1);
 
-            mTxIndex = 1; // keep header
-            mTxBuffer[mTxIndex++] = mTimestampLow;
+                mTxIndex = 1; // keep header
+                mTxBuffer[mTxIndex++] = mTimestampLow; // or generate new ?  
+            }
+            else
+            {
+                mTxBuffer[mTxIndex - 1] = mTimestampLow; // or generate new ?
+            }
+            mTxBuffer[mTxIndex++] = 0xF7;
         }
-        else
-        {
-            mTxBuffer[mTxIndex - 1] = mTimestampLow;
-        }
-        mTxBuffer[mTxIndex++] = 0xF7;
-    }
 
         mBleClass.write(mTxBuffer, mTxIndex);
         mTxIndex = 0;
