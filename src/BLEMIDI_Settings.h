@@ -1,6 +1,6 @@
 #pragma once
 
-#include "BLE-MIDI_Namespace.h"
+#include "BLEMIDI_Namespace.h"
 
 BEGIN_BLEMIDI_NAMESPACE
 

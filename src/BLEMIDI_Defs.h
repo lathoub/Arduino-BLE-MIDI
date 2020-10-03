@@ -1,6 +1,6 @@
 #pragma once
 
-#include "BLE-MIDI_Namespace.h"
+#include "BLEMIDI_Namespace.h"
 
 // As specified in
 // Specification for MIDI over Bluetooth Low Energy (BLE-MIDI)

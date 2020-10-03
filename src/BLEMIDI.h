@@ -7,9 +7,9 @@
 #include <MIDI.h>
 using namespace MIDI_NAMESPACE;
 
-#include "BLE-MIDI_Settings.h"
-#include "BLE-MIDI_Defs.h"
-#include "BLE-MIDI_Namespace.h"
+#include "BLEMIDI_Settings.h"
+#include "BLEMIDI_Defs.h"
+#include "BLEMIDI_Namespace.h"
 
 BEGIN_BLEMIDI_NAMESPACE
 

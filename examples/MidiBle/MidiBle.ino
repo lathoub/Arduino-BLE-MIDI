@@ -1,4 +1,4 @@
-#include <BLE-MIDI.h>
+#include <BLEMIDI.h>
 
 #include <hardware/BLEMIDI_ESP32_NimBLE.h>
 //#include <hardware/BLEMIDI_ESP32.h>
