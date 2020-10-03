@@ -22,18 +22,21 @@ private:
     byte mRxBuffer[Settings::MaxBufferSize];
     unsigned mRxIndex = 0;
 
-    byte mTxBuffer[Settings::MaxBufferSize];
+    byte mTxBuffer[Settings::MaxBufferSize]; // minimum 5 bytes
     unsigned mTxIndex = 0;
     
     char mDeviceName[24];
-    
+
+    bool mIsSysEx;
+    uint8_t mTimestampLow;
+
 private:
 	T mBleClass;
 
 public:    
     BLEMIDITransport(const char* deviceName)
 	{
-        strncpy(mDeviceName, deviceName, 24);
+        strncpy(mDeviceName, deviceName, sizeof(mDeviceName));
         
         mRxIndex = 0;
         mTxIndex = 0;
@@ -47,34 +50,44 @@ public:
         mBleClass.begin(mDeviceName, this);
     }
 
-    bool beginTransmission(MidiType)
+    bool beginTransmission(MidiType type)
     {
         getMidiTimestamp(&mTxBuffer[0], &mTxBuffer[1]);
         mTxIndex = 2;
-        
+        mTimestampLow = mTxBuffer[1];
+      
         return true;
     }
     
     void write(byte inData)
     {
-        // check for size! SysEx!!!
-        if (false)
+        if (mTxIndex >= sizeof(mTxBuffer))
         {
-            // should only happen from SysEx!
-            // if we approach the end of the buffer, chop-up in segments until
-            // we reach F7 (end of SysEx)
+            mBleClass.write(mTxBuffer, sizeof(mTxBuffer));
+            mTxIndex = 1; // keep header
         }
 
-        if (inData == MidiType::SystemExclusiveEnd)
-        {
-            mTxBuffer[mTxIndex++] = mTxBuffer[1];
-        }
-        
         mTxBuffer[mTxIndex++] = inData;
     }
 
     void endTransmission()
     {
+    if (mTxBuffer[mTxIndex - 1] == 0xF7)
+    {
+        if (mTxIndex >= sizeof(mTxBuffer))
+        {
+            mBleClass.write(mTxBuffer, mTxIndex - 1);
+
+            mTxIndex = 1; // keep header
+            mTxBuffer[mTxIndex++] = mTimestampLow;
+        }
+        else
+        {
+            mTxBuffer[mTxIndex - 1] = mTimestampLow;
+        }
+        mTxBuffer[mTxIndex++] = 0xF7;
+    }
+
         mBleClass.write(mTxBuffer, mTxIndex);
         mTxIndex = 0;
     }
