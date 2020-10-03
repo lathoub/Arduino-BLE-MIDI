@@ -5,11 +5,11 @@
 //#include <hardware/BLEMIDI_ESP32.h>
 #endif
 
-#ifdef AAA 
 #include <hardware/BLEMIDI_nRF52.h>
+#ifdef BLEMIDI_nRF52 
 #endif
 
 
-//#ifdef BBB 
+#ifdef ArduinoBLE 
 #include <hardware/BLEMIDI_ArduinoBLE.h>
-//#endif
+#endif
