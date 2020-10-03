@@ -29,7 +29,7 @@ void loop()
 will create a instance named `bleMIDI` and listens to incoming MIDI on channel 1.
 
 ## Tested boards/modules
-- Adafruit Huzzah32 feather
+- ESP32
 
 ## Other Transport protocols:
 The libraries below  the same calling mechanism (API), making it easy to interchange the transport layer.
