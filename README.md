@@ -13,7 +13,7 @@ When manually installing this library, you have to manually download [Arduino MI
 ## Usage
 ### Basic / Default
 ```cpp
-#include <BLEMIDI.h>
+#include <BLEMIDI_Transport.h>
 #include <hardware/BLEMIDI_ESP32.h>
 ...
 BLEMIDI_CREATE_DEFAULT_ESP32_INSTANCE();

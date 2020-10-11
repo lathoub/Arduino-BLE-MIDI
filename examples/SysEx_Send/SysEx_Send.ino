@@ -1,4 +1,4 @@
-#include <BLEMIDI.h>
+#include <BLEMIDI_Transport.h>
 
 #include <hardware/BLEMIDI_ESP32_NimBLE.h>
 //#include <hardware/BLEMIDI_ESP32.h>

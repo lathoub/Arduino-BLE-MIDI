@@ -1,11 +1,10 @@
 /*!
- *  @file		BLEMIDI.h
+ *  @file		BLEMIDI_Transport.h
  */
 
 #pragma once
 
 #include <MIDI.h>
-using namespace MIDI_NAMESPACE;
 
 #include "BLEMIDI_Settings.h"
 #include "BLEMIDI_Defs.h"
@@ -14,7 +13,7 @@ using namespace MIDI_NAMESPACE;
 BEGIN_BLEMIDI_NAMESPACE
 
 template<class T, class _Settings = DefaultSettings>
-class BLEMIDITransport
+class BLEMIDI_Transport
 {
     typedef _Settings Settings;
 
@@ -33,7 +32,7 @@ private:
 	T mBleClass;
 
 public:    
-    BLEMIDITransport(const char* deviceName)
+    BLEMIDI_Transport(const char* deviceName)
 	{
         strncpy(mDeviceName, deviceName, sizeof(mDeviceName));
         
@@ -49,7 +48,7 @@ public:
         mBleClass.begin(mDeviceName, this);
     }
 
-    bool beginTransmission(MidiType type)
+    bool beginTransmission(MIDI_NAMESPACE::MidiType type)
     {
         getMidiTimestamp(&mTxBuffer[0], &mTxBuffer[1]);
         mTxIndex = 2;
@@ -288,9 +287,10 @@ public:
 
 };
 
-END_BLEMIDI_NAMESPACE
-
 struct MySettings : public MIDI_NAMESPACE::DefaultSettings
 {
     static const bool Use1ByteParsing = false;
 };
+
+END_BLEMIDI_NAMESPACE
+

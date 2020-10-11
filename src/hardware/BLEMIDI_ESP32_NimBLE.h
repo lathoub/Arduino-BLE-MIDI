@@ -12,7 +12,7 @@ private:
     BLEAdvertising*		_advertising = nullptr;
     BLECharacteristic*	_characteristic = nullptr;
         
-    BLEMIDITransport<class BLEMIDI_ESP32_NimBLE>* _bleMidiTransport = nullptr;
+    BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE>* _bleMidiTransport = nullptr;
 
     friend class MyServerCallbacks; 
     friend class MyCharacteristicCallbacks; 
@@ -25,7 +25,7 @@ public:
     {
     }
     
-	bool begin(const char*, BLEMIDITransport<class BLEMIDI_ESP32_NimBLE>*);
+	bool begin(const char*, BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE>*);
     
     void write(uint8_t* buffer, size_t length)
     {
@@ -102,7 +102,7 @@ protected:
     }
 };
 
-bool BLEMIDI_ESP32_NimBLE::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI_ESP32_NimBLE>* bleMidiTransport)
+bool BLEMIDI_ESP32_NimBLE::begin(const char* deviceName, BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 
@@ -147,12 +147,12 @@ bool BLEMIDI_ESP32_NimBLE::begin(const char* deviceName, BLEMIDITransport<class 
  /*! \brief Create an instance for ESP32 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE> &)BLE##Name);
+BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE> BLE##Name(DeviceName); \
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE> &)BLE##Name);
 
  /*! \brief Create a default instance for ESP32 named BLE-MIDI
  */
 #define BLEMIDI_CREATE_DEFAULT_INSTANCE() \
-BLEMIDI_CREATE_INSTANCE("BLE-MIDI", MIDI)
+BLEMIDI_CREATE_INSTANCE("Esp32-BLE-MIDI", MIDI)
 
 END_BLEMIDI_NAMESPACE

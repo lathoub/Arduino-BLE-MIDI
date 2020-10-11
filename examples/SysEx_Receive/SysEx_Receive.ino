@@ -1,13 +1,15 @@
-#include <BLEMIDI.h>
+#include <BLEMIDI_Transport.h>
 
-#include <hardware/BLEMIDI_ESP32_NimBLE.h>
-//#include <hardware/BLEMIDI_ESP32.h>
+//#include <hardware/BLEMIDI_ESP32_NimBLE.h>
+#include <hardware/BLEMIDI_ESP32.h>
 //#include <hardware/BLEMIDI_nRF52.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
-BLEMIDI_CREATE_DEFAULT_INSTANCE()
+BLEMIDI_CREATE_INSTANCE("CustomName", MIDI)
 
 bool isConnected = false;
+
+//#define LOGGING
 
 // -----------------------------------------------------------------------------
 //

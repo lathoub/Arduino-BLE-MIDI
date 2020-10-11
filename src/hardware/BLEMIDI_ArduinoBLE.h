@@ -63,7 +63,7 @@ private:
 class BLEMIDI_ArduinoBLE
 {
 private:   
-    static BLEMIDITransport<class BLEMIDI_ArduinoBLE>* _bleMidiTransport;
+    static BLEMIDI_Transport<class BLEMIDI_ArduinoBLE>* _bleMidiTransport;
     static BLEDevice* _central;
 
     Fifo<byte, 64> mRxBuffer;
@@ -73,7 +73,7 @@ public:
     {
     }
     
-	bool begin(const char*, BLEMIDITransport<class BLEMIDI_ArduinoBLE>*);
+	bool begin(const char*, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE>*);
     
     void write(uint8_t* buffer, size_t length)
     {
@@ -177,10 +177,10 @@ protected:
     }
 };
 
-BLEMIDITransport<class BLEMIDI_ArduinoBLE>* BLEMIDI_ArduinoBLE::_bleMidiTransport = nullptr;
+BLEMIDI_Transport<class BLEMIDI_ArduinoBLE>* BLEMIDI_ArduinoBLE::_bleMidiTransport = nullptr;
 BLEDevice* BLEMIDI_ArduinoBLE::_central = nullptr;
 
-bool BLEMIDI_ArduinoBLE::begin(const char* deviceName, BLEMIDITransport<class BLEMIDI_ArduinoBLE>* bleMidiTransport)
+bool BLEMIDI_ArduinoBLE::begin(const char* deviceName, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 
@@ -214,10 +214,10 @@ bool BLEMIDI_ArduinoBLE::begin(const char* deviceName, BLEMIDITransport<class BL
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE>, MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDITransport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> &)BLE##Name);
+BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> BLE##Name(DeviceName); \
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> &)BLE##Name);
 
- /*! \brief Create a default instance for nRF52 named BLE-MIDI
+ /*! \brief Create a default instance for nRF52 (Nano 33 BLE) named BLE-MIDI
  */
 #define BLEMIDI_CREATE_DEFAULT_INSTANCE() \
 BLEMIDI_CREATE_INSTANCE("BLE-MIDI", MIDI)
