@@ -14,20 +14,55 @@ When manually installing this library, you have to manually download [Arduino MI
 #include <BLEMIDI_Transport.h>
 #include <hardware/BLEMIDI_ESP32.h>
 ...
-BLEMIDI_CREATE_DEFAULT_ESP32_INSTANCE();
+BLEMIDI_CREATE_DEFAULT_INSTANCE()
 ...
 void setup()
 {
-   MIDI.begin(1);
+   MIDI.begin();
 ...
 void loop()
 {
    MIDI.read();
 ```
-will create a instance named `bleMIDI` and listens to incoming MIDI on channel 1.
+will create a instance named `BLEMIDI` and listens to incoming MIDI.
+
+### using NimBLE for ESP32 with a custom name and turns LED on when its connected
+
+```cpp
+#include <BLEMIDI_Transport.h>
+#include <hardware/BLEMIDI_ESP32_NimBLE.h>
+...
+BLEMIDI_CREATE_INSTANCE("CustomName", MIDI)
+...
+void setup()
+{
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+
+  BLEMIDI.setHandleConnected(OnConnected);
+  BLEMIDI.setHandleDisconnected(OnDisconnected);
+  
+  MIDI.begin();
+...
+void loop()
+{
+  MIDI.read();
+...
+void OnConnected() {
+  digitalWrite(LED_BUILTIN, HIGH);
+}
+
+void OnDisconnected() {
+  digitalWrite(LED_BUILTIN, LOW);
+}
+   
+```
+will create a instance named `BLEMIDI` and listens to incoming MIDI.
 
 ## Tested boards/modules
 - ESP32
+- ESP32 NimBLE
+- Arduino NANO 33 BLE
 
 ## Other Transport protocols:
 The libraries below  the same calling mechanism (API), making it easy to interchange the transport layer.
