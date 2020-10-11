@@ -60,8 +60,7 @@ void OnDisconnected() {
 will create a instance named `BLEMIDI` and listens to incoming MIDI.
 
 ## Tested boards/modules
-- ESP32
-- ESP32 NimBLE
+- ESP32 (OOB BLE and NimBLE)
 - Arduino NANO 33 BLE
 
 ## Other Transport protocols:
