@@ -6,7 +6,10 @@ This library depends on the [Arduino MIDI Library](https://github.com/FortySeven
 
 When installing this library from the Arduino IDE, the dependency be downloaded and installed in the same directory as this library. (Thanks to the `depends` clause in `library.properties`)
 
-When manually installing this library, you have to manually download [Arduino MIDI Library](https://github.com/FortySevenEffects/arduino_midi_library) from github and install it in the same directory as this library - without this additional install, this library will not be able to compile. 
+When manually installing this library, you have to manually download [Arduino MIDI Library](https://github.com/FortySevenEffects/arduino_midi_library) from github and install it in the same directory as this library - without this additional install, this library will not be able to compile.
+
+When using `ESP32` consider using NimBLE (`NimBLE-Arduino`).
+When using the `Arduino NANO 33 BLE`, you have to install `ArduinoBLE`
 
 ## Usage
 ### Basic / Default
