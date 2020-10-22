@@ -128,17 +128,17 @@ bool BLEMIDI_ESP32_NimBLE::begin(const char* deviceName, BLEMIDI_Transport<class
                                                      );
 
     _characteristic->setCallbacks(new MyCharacteristicCallbacks(this));
+
+    auto _security = new NimBLESecurity();
+    _security->setAuthenticationMode(ESP_LE_AUTH_BOND);
+
     // Start the service
     service->start();
-    
-    auto advertisementData = BLEAdvertisementData();
-    advertisementData.setFlags(0x04);
-    advertisementData.setCompleteServices(BLEUUID(SERVICE_UUID));
-    advertisementData.setName(deviceName);
 
     // Start advertising
     _advertising = _server->getAdvertising();
-    _advertising->setAdvertisementData(advertisementData);
+    _advertising->addServiceUUID(service->getUUID());
+    _advertising->setAppearance(0x00);
     _advertising->start();
     
     return true;

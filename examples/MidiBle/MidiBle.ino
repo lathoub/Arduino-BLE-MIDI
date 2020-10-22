@@ -17,8 +17,10 @@ void setup()
 {
   MIDI.begin();
 
+#ifdef LED_BUILTIN
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
+#endif
 
   BLEMIDI.setHandleConnected(OnConnected);
   BLEMIDI.setHandleDisconnected(OnDisconnected);
@@ -51,7 +53,9 @@ void loop()
 // -----------------------------------------------------------------------------
 void OnConnected() {
   isConnected = true;
+#ifdef LED_BUILTIN
   digitalWrite(LED_BUILTIN, HIGH);
+#endif  
 }
 
 // -----------------------------------------------------------------------------
@@ -59,7 +63,9 @@ void OnConnected() {
 // -----------------------------------------------------------------------------
 void OnDisconnected() {
   isConnected = false;
+#ifdef LED_BUILTIN
   digitalWrite(LED_BUILTIN, LOW);
+#endif
 }
 
 // -----------------------------------------------------------------------------
