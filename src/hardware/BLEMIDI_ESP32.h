@@ -132,17 +132,17 @@ bool BLEMIDI_ESP32::begin(const char* deviceName, BLEMIDI_Transport<class BLEMID
     _characteristic->addDescriptor(new BLE2902());
 
     _characteristic->setCallbacks(new MyCharacteristicCallbacks(this));
+
+    auto _security = new BLESecurity();
+    _security->setAuthenticationMode(ESP_LE_AUTH_BOND);
+
     // Start the service
     service->start();
     
-    auto advertisementData = BLEAdvertisementData();
-    advertisementData.setFlags(0x04);
-    advertisementData.setCompleteServices(BLEUUID(SERVICE_UUID));
-    advertisementData.setName(deviceName);
-
     // Start advertising
     _advertising = _server->getAdvertising();
-    _advertising->setAdvertisementData(advertisementData);
+    _advertising->addServiceUUID(service->getUUID());
+    _advertising->setAppearance(0x00);
     _advertising->start();
     
     return true;
@@ -157,6 +157,6 @@ MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMES
  /*! \brief Create a default instance for ESP32 named BLE-MIDI
  */
 #define BLEMIDI_CREATE_DEFAULT_INSTANCE() \
-BLEMIDI_CREATE_INSTANCE("BLE-MIDI", MIDI)
+BLEMIDI_CREATE_INSTANCE("Esp32-BLE-MIDI", MIDI)
 
 END_BLEMIDI_NAMESPACE
