@@ -11,7 +11,9 @@ unsigned long t0 = millis();
 bool isConnected = false;
 
 // -----------------------------------------------------------------------------
-//
+// When BLE connected, LED will turn on (indication that connection was successful)
+// When receiving a NoteOn, LED will go out, on NoteOff, light comes back on.
+// This is an easy and conveniant way to show that the connection is alive and working. 
 // -----------------------------------------------------------------------------
 void setup()
 {
