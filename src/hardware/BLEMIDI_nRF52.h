@@ -24,6 +24,11 @@ public:
     
 	bool begin(const char*, BLEMIDI_NAMESPACE::BLEMIDI_Transport<class BLEMIDI_nRF52>*);
     
+    void end() 
+    {
+        
+    }
+
     void write(uint8_t* buffer, size_t length)
     {
     }

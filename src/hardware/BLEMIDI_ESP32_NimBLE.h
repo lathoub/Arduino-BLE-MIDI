@@ -27,6 +27,11 @@ public:
     
 	bool begin(const char*, BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE>*);
     
+    void end() 
+    {
+        
+    }
+
     void write(uint8_t* buffer, size_t length)
     {
         _characteristic->setValue(buffer, length);

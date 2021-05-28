@@ -75,6 +75,11 @@ public:
     
 	bool begin(const char*, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE>*);
     
+    void end() 
+    {
+        
+    }
+
     void write(uint8_t* buffer, size_t length)
     {
         // TODO: test length

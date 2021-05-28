@@ -46,6 +46,11 @@ public:
     void begin()
     {
         mBleClass.begin(mDeviceName, this);
+    }	
+
+    void end()
+    {
+        mBleClass.end();
     }
 
     bool beginTransmission(MIDI_NAMESPACE::MidiType type)

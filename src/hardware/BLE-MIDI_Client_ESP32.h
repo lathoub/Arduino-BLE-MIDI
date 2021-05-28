@@ -21,7 +21,12 @@ public:
     }
     
 	bool begin(const char*, BLEMIDI<class BLEMIDI_Client_ESP32>*);
-    
+
+    void end() 
+    {
+        
+    }
+        
     void write(uint8_t* data, uint8_t length)
     {
         _characteristic->setValue(data, length);
