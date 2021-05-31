@@ -1,6 +1,8 @@
 # Arduino BLE-MIDI Transport 
 [![arduino-library-badge](https://www.ardu-badge.com/badge/BLE-MIDI.svg?)](https://www.ardu-badge.com/BLE-MIDI) 
 
+This fork is for Client nimBLE transport layer.
+
 This library implements the BLE-MIDI transport layer for the [FortySevenEffects Arduino MIDI Library](https://github.com/FortySevenEffects/arduino_midi_library) 
 
 ## Installation
