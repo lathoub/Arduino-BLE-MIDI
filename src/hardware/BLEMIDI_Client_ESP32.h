@@ -9,9 +9,14 @@ static bool scanDone = false;
 /** Define a class to handle the callbacks when advertisments are received */
 class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
 {
+public:
+    int test = 0;
 
+protected:
     void onResult(NimBLEAdvertisedDevice *advertisedDevice)
     {
+        test++;
+        Serial.println(test);
         Serial.print("Advertised Device found: ");
         Serial.println(advertisedDevice->toString().c_str());
         if (advertisedDevice->isAdvertisingService(NimBLEUUID(SERVICE_UUID)))
@@ -40,11 +45,17 @@ class BLEMIDI_Client_ESP32
 private:
     BLEClient *_client = nullptr;
     BLEAdvertising *_advertising = nullptr;
-    BLECharacteristic *_characteristic = nullptr;
+    BLERemoteCharacteristic *_characteristic = nullptr;
+    BLERemoteService *pSvc = nullptr;
+    //NimBLERemoteDescriptor *pDsc = nullptr;
 
     BLEMIDI_Transport<class BLEMIDI_Client_ESP32> *_bleMidiTransport = nullptr;
 
     friend class AdvertisedDeviceCallbacks;
+    friend class MyClientCallbacks;
+    friend class MIDI_NAMESPACE::MidiInterface<BLEMIDI_Transport<BLEMIDI_Client_ESP32>, MySettings>;
+
+    AdvertisedDeviceCallbacks myAdvCB;
 
 protected:
     QueueHandle_t mRxQueue;
@@ -58,17 +69,44 @@ public:
 
     void write(uint8_t *data, uint8_t length)
     {
-        _characteristic->setValue(data, length);
-        //_characteristic->notify();
+        _characteristic->writeValue(data, length, true);
+        myAdvCB.test++;
     }
 
     bool available(byte *pvBuffer)
     {
+        if (_client == nullptr || !_client->isConnected())
+        {
+            //Serial.println("No Conectado");
+            if (doConnect)
+            {
+                doConnect = false;
+                Serial.println("intentar conexion");
+                if (connect())
+                {
+                    Serial.println("reconnected");                   
+                }
+                else
+                {
+                    Serial.println("Rescan");
+                    scanDone=false;
+                    NimBLEDevice::getScan()->start(3, scanEndedCB);
+                }
+            }
+            else if (scanDone)
+            {   
+                scanDone=false;
+                Serial.println("Rescan 2");
+                NimBLEDevice::getScan()->start(3, scanEndedCB);
+            }
+        }
+
         // return 1 byte from the Queue
         return xQueueReceive(mRxQueue, (void *)pvBuffer, 0); // return immediately when the queue is empty
     }
 
-    void add(byte value)
+    void
+    add(byte value)
     {
         // called from BLE-MIDI, to add it to a buffer here
         xQueueSend(mRxQueue, &value, portMAX_DELAY);
@@ -80,10 +118,16 @@ public:
         _bleMidiTransport->receive(buffer, length);
     }
 
+    void connectCallbacks(MIDI_NAMESPACE::MidiInterface<BLEMIDI_Transport<BLEMIDI_Client_ESP32>, MySettings> *MIDIcallback);
+
     void connected()
     {
+        Serial.println("!!");
         if (_bleMidiTransport->_connectedCallback)
+        {
+            Serial.println("@");
             _bleMidiTransport->_connectedCallback();
+        }
     }
 
     void disconnected()
@@ -93,6 +137,9 @@ public:
     }
 
     void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify);
+
+    void scan();
+    bool connect();
 };
 
 class MyClientCallbacks : public BLEClientCallbacks
@@ -108,30 +155,33 @@ protected:
 
     void onConnect(BLEClient *pClient)
     {
-        Serial.println("Connected");
+        Serial.println("##Connected##");
         /** After connection we should change the parameters if we don't need fast response times.
          *  These settings are 150ms interval, 0 latency, 450ms timout.
          *  Timeout should be a multiple of the interval, minimum is 100ms.
          *  I find a multiple of 3-5 * the interval works best for quick response/reconnect.
          *  Min interval: 120 * 1.25ms = 150, Max interval: 120 * 1.25ms = 150, 0 latency, 60 * 10ms = 600ms timeout
          */
+        //pClient->updateConnParams
         pClient->updateConnParams(6, 32, 0, 40);
         if (_bluetoothEsp32)
+        {
+            Serial.println("??");
             _bluetoothEsp32->connected();
+        }
     };
 
     void onDisconnect(BLEClient *pClient)
     {
         Serial.print(pClient->getPeerAddress().toString().c_str());
         Serial.println(" Disconnected - Starting scan");
-        
-        
-        
-        if (_bluetoothEsp32){
+
+        if (_bluetoothEsp32)
+        {
             _bluetoothEsp32->disconnected();
         }
 
-        NimBLEDevice::getScan()->start(3,scanEndedCB);
+        NimBLEDevice::getScan()->start(3, scanEndedCB);
     }
     bool onConnParamsUpdateRequest(NimBLEClient *pClient, const ble_gap_upd_params *params)
     {
@@ -171,11 +221,168 @@ void BLEMIDI_Client_ESP32::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacter
     receive(pData, length);
 }
 
+void BLEMIDI_Client_ESP32::scan()
+{
+    // Retrieve a Scanner and set the callback we want to use to be informed when we
+    // have detected a new device.  Specify that we want active scanning and start the
+    // scan to run for 5 seconds.
+    NimBLEScan *pBLEScan = BLEDevice::getScan();
+    pBLEScan->setAdvertisedDeviceCallbacks(&myAdvCB);
+    pBLEScan->setInterval(1500);
+    pBLEScan->setWindow(500);
+    pBLEScan->setActiveScan(true);
+    //doScan = true;
+    Serial.println("Scanning...");
+    pBLEScan->start(10, scanEndedCB);
+};
+
+bool BLEMIDI_Client_ESP32::connect()
+{
+    Serial.println("TryConnection...");
+    using namespace std::placeholders;
+    /** Check if we have a client we should reuse first **/
+    if (NimBLEDevice::getClientListSize())
+    {
+        /** Special case when we already know this device, we send false as the
+         *  second argument in connect() to prevent refreshing the service database.
+         *  This saves considerable time and power.
+         */
+        _client = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
+        if (_client)
+        {
+            if (!_client->connect(advDevice, false))
+            {
+                Serial.println("Reconnect failed");
+                return false;
+            }
+            Serial.println("Reconnected client");
+            _client->setConnectionParams(12, 12, 0, 51);
+            if (_characteristic->canNotify())
+                {
+                    Serial.println("CAN NOTIFY");
+                    if (!_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
+                    {
+                        Serial.println("error");
+                        /** Disconnect if subscribe failed */
+                        _client->disconnect();
+                        return false;
+                    }
+                }
+        }
+        /** We don't already have a client that knows this device,
+         *  we will check for a client that is disconnected that we can use.
+         */
+        else
+        {
+            _client = NimBLEDevice::getDisconnectedClient();
+        }
+    }
+
+    /** No client to reuse? Create a new one. */
+    if (!_client)
+    {
+        if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS)
+        {
+            Serial.println("Max clients reached - no more connections available");
+            return false;
+        }
+        _client = BLEDevice::createClient();
+
+        _client->setClientCallbacks(new MyClientCallbacks(this), false);
+        /** Set initial connection parameters: These settings are 15ms interval, 0 latency, 120ms timout.
+         *  These settings are safe for 3 clients to connect reliably, can go faster if you have less
+         *  connections. Timeout should be a multiple of the interval, minimum is 100ms.
+         *  Min interval: 12 * 1.25ms = 15, Max interval: 12 * 1.25ms = 15, 0 latency, 51 * 10ms = 510ms timeout
+         */
+        _client->setConnectionParams(12, 12, 0, 51);
+        /** Set how long we are willing to wait for the connection to complete (seconds), default is 30. */
+        _client->setConnectTimeout(5);
+        Serial.println("#Connection");
+        if (!_client->connect(advDevice))
+        {
+            /** Created a client but failed to connect, don't need to keep it as it has no data */
+            
+            NimBLEDevice::deleteClient(_client);
+            _client=nullptr;
+            Serial.println("Failed to connect, deleted client");
+            return false;
+        }
+        vTaskDelay(100);
+
+        if (!_client->isConnected())
+        {
+            if (!_client->connect(advDevice))
+            {
+                Serial.println("Failed to connect");
+                return false;
+            }
+        }
+        else
+        {
+
+            Serial.print("Connected to: ");
+            Serial.println(_client->getPeerAddress().toString().c_str());
+            Serial.print("RSSI: ");
+            Serial.println(_client->getRssi());
+        }
+        /** Now we can read/write/subscribe the charateristics of the services we are interested in */
+
+        pSvc = _client->getService(SERVICE_UUID);
+        if (pSvc)
+        { /** make sure it's not null */
+            _characteristic = pSvc->getCharacteristic(CHARACTERISTIC_UUID);
+
+            if (_characteristic)
+            { /** make sure it's not null */
+                // if (_characteristic->canRead())
+                // {
+                //     Serial.print(_characteristic->getUUID().toString().c_str());
+                //     Serial.print(" Value: ");
+                //     Serial.println(_characteristic->readValue().c_str());
+                // }
+
+                /** registerForNotify() has been deprecated and replaced with subscribe() / unsubscribe().
+             *  Subscribe parameter defaults are: notifications=true, notifyCallback=nullptr, response=false.
+             *  Unsubscribe parameter defaults are: response=false.
+             */
+                if (_characteristic->canNotify())
+                {
+                    Serial.println("CAN NOTIFY");
+                    if (!_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
+                    {
+                        Serial.println("error");
+                        /** Disconnect if subscribe failed */
+                        _client->disconnect();
+                        return false;
+                    }
+                }
+                // else if (_characteristic->canIndicate())
+                // {
+                //     /** Send false as first argument to subscribe to indications instead of notifications */
+                //     //if(!pChr->registerForNotify(notifyCB, false)) {
+                //     if (!_characteristic->subscribe(false, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
+                //     {
+                //         /** Disconnect if subscribe failed */
+                //         _client->disconnect();
+                //         return false;
+                //     }
+                // }
+            }
+        }
+        else
+        {
+            Serial.println("MIDI service not found.");
+            return false;
+        }
+    }
+    return true;
+};
+
 bool BLEMIDI_Client_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_Client_ESP32> *bleMidiTransport)
 {
 
-    using namespace std::placeholders;
     _bleMidiTransport = bleMidiTransport;
+
     Serial.println("CreateBLE");
     std::string stringDeviceName(deviceName);
     NimBLEDevice::init(stringDeviceName);
@@ -207,121 +414,22 @@ bool BLEMIDI_Client_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class
     /** Optional: set any devices you don't want to get advertisments from */
     // NimBLEDevice::addIgnored(NimBLEAddress ("aa:bb:cc:dd:ee:ff"));
 
-    // Retrieve a Scanner and set the callback we want to use to be informed when we
-    // have detected a new device.  Specify that we want active scanning and start the
-    // scan to run for 5 seconds.
+    scan();
+    vTaskDelay(1000);
 
-    NimBLEScan *pBLEScan = BLEDevice::getScan();
-    pBLEScan->setAdvertisedDeviceCallbacks(new AdvertisedDeviceCallbacks());
-    pBLEScan->setInterval(150);
-    pBLEScan->setWindow(50);
-    pBLEScan->setActiveScan(true);
-    //doScan = true;
-    Serial.println("Scan");
-    pBLEScan->start(10, scanEndedCB);
-    Serial.println("Scan2");
+    //connect();
 
-    while (!doConnect)
-    {
+    // while (!doConnect)
+    // {
 
-        if (!pBLEScan->isScanning())
-        {
-            Serial.println("RESCAN");
-            pBLEScan->start(10, scanEndedCB);
-        }
-        vTaskDelay(100);
-    }
-    Serial.println("LOOP OUT");
-
-    _client = BLEDevice::createClient();
-
-    _client->setClientCallbacks(new MyClientCallbacks(this), false);
-    /** Set initial connection parameters: These settings are 15ms interval, 0 latency, 120ms timout.
-         *  These settings are safe for 3 clients to connect reliably, can go faster if you have less
-         *  connections. Timeout should be a multiple of the interval, minimum is 100ms.
-         *  Min interval: 12 * 1.25ms = 15, Max interval: 12 * 1.25ms = 15, 0 latency, 51 * 10ms = 510ms timeout
-         */
-    _client->setConnectionParams(12, 12, 0, 51);
-    /** Set how long we are willing to wait for the connection to complete (seconds), default is 30. */
-    _client->setConnectTimeout(5);
-    Serial.println("#Connection");
-    if (!_client->connect(advDevice))
-    {
-        /** Created a client but failed to connect, don't need to keep it as it has no data */
-        NimBLEDevice::deleteClient(_client);
-        Serial.println("Failed to connect, deleted client");
-        return false;
-    }
-    vTaskDelay(100);
-
-    if (!_client->isConnected())
-    {
-        if (!_client->connect(advDevice))
-        {
-            Serial.println("Failed to connect");
-            return false;
-        }
-    }
-    else
-    {
-
-        Serial.print("Connected to: ");
-        Serial.println(_client->getPeerAddress().toString().c_str());
-        Serial.print("RSSI: ");
-        Serial.println(_client->getRssi());
-    }
-    /** Now we can read/write/subscribe the charateristics of the services we are interested in */
-    NimBLERemoteService *pSvc = nullptr;
-    NimBLERemoteCharacteristic *pChr = nullptr;
-    //NimBLERemoteDescriptor *pDsc = nullptr;
-
-    pSvc = _client->getService(SERVICE_UUID);
-    if (pSvc)
-    { /** make sure it's not null */
-        pChr = pSvc->getCharacteristic(CHARACTERISTIC_UUID);
-
-        if (pChr)
-        { /** make sure it's not null */
-            if (pChr->canRead())
-            {
-                Serial.print(pChr->getUUID().toString().c_str());
-                Serial.print(" Value: ");
-                Serial.println(pChr->readValue().c_str());
-            }
-
-            /** registerForNotify() has been deprecated and replaced with subscribe() / unsubscribe().
-             *  Subscribe parameter defaults are: notifications=true, notifyCallback=nullptr, response=false.
-             *  Unsubscribe parameter defaults are: response=false.
-             */
-            if (pChr->canNotify())
-            {
-                Serial.println("CAN NOTIFY");
-                if (!pChr->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
-                {
-                    Serial.println("error");
-                    /** Disconnect if subscribe failed */
-                    _client->disconnect();
-                    return false;
-                }
-            }
-            else if (pChr->canIndicate())
-            {
-                /** Send false as first argument to subscribe to indications instead of notifications */
-                //if(!pChr->registerForNotify(notifyCB, false)) {
-                if (!pChr->subscribe(false, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
-                {
-                    /** Disconnect if subscribe failed */
-                    _client->disconnect();
-                    return false;
-                }
-            }
-        }
-    }
-    else
-    {
-        Serial.println("MIDI service not found.");
-        return false;
-    }
+    //     if (!pBLEScan->isScanning())
+    //     {
+    //         Serial.println("RESCAN");
+    //         pBLEScan->start(10, scanEndedCB);
+    //     }
+    //     vTaskDelay(100);
+    // }
+    // Serial.println("LOOP OUT");
 
     return true;
 }
@@ -337,9 +445,9 @@ void scanEndedCB(NimBLEScanResults results)
         scanDone = true;
     }
     else
-    {       
+    {
         scanDone = false;
-         NimBLEDevice::getScan()->start(3,scanEndedCB);
+        NimBLEDevice::getScan()->start(3, scanEndedCB);
     }
 }
 
