@@ -53,7 +53,7 @@ private:
 
     friend class AdvertisedDeviceCallbacks;
     friend class MyClientCallbacks;
-    friend class MIDI_NAMESPACE::MidiInterface<BLEMIDI_Transport<BLEMIDI_Client_ESP32>, MySettings>;
+    friend class MIDI_NAMESPACE::MidiInterface<BLEMIDI_Transport<BLEMIDI_Client_ESP32>, MySettings>;//
 
     AdvertisedDeviceCallbacks myAdvCB;
 
