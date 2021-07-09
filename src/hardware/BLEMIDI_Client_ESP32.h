@@ -2,8 +2,8 @@
 
 /*
 #############################################
-########### USER DEFINE BEGINING ############
-####### Only modify these parameters ########
+########## USER DEFINES BEGINNING ###########
+####### Modify only these parameters ########
 #############################################
 */
 
@@ -12,13 +12,13 @@
 */
 
 /**
- * Set always the same name independiently of name server
+ * Set always the same name independently of name server
  */
 //#define BLEMIDI_CLIENT_FIXED_NAME       "BleMidiClient"
 
 #ifndef BLEMIDI_CLIENT_FIXED_NAME //Not modify
 /**
- * BLE name is composed by the nex way when client try to connect to speccific server:
+ * When client tries to connect to specific server, BLE name is composed as follows:
  * BLEMIDI_CLIENT_NAME_PREFIX + <NameServer/addrServer> + BLEMIDI_CLIENT_NAME_SUBFIX
  * 
  * example: 
@@ -32,7 +32,7 @@
 #define BLEMIDI_CLIENT_NAME_SUBFIX ""
 
 /**
- * BLE name when it tries to connect to first midi server found.
+ * When client tries to connect to the first midi server found:
  */
 #define BLEMIDI_CLIENT_DEFAULT_NAME "BLEMIDI-CLIENT"
 #endif //Not modify
@@ -48,23 +48,22 @@
      */
 #define BLEMIDI_CLIENT_SECURITY_CAP BLE_HS_IO_NO_INPUT_OUTPUT
 
-/** Set security method.
+/** Set the security method.
      *  bonding
      *  man in the middle protection
      *  pair. secure connections
      * 
      *  More info in nimBLE lib
      * 
-     *  Uncomment that you need
+     *  Uncomment what you need
      *  These are the default values.
      */
 //#define BLEMIDI_CLIENT_BOND
 //#define BLEMIDI_CLIENT_MITM
 #define BLEMIDI_CLIENT_PAIR
 
-
 /**
- * This callback funtion defines what it must to do when server requieres PassKey.
+ * This callback function defines what will be done when server requieres PassKey.
  * Add your custom code here.
  */
 static uint32_t userOnPassKeyRequest()
@@ -79,14 +78,15 @@ static uint32_t userOnPassKeyRequest()
     return passkey;
 };
 
-/*
+    /*
 ###### BLE COMMUNICATION PARAMS ######
 */
     /** Set connection parameters: 
-         * If only use one connection, put recomended BLE server param communication (you may scan it ussing "nRF Connect" app or other similar).
+         *  If you only use one connection, put recomended BLE server param communication 
+         *  (you may scan it ussing "nRF Connect" app or other similar apps).
          *  
-         *  If you use more than one connection use, for example, settings like 15ms interval, 0 latency, 120ms timout.
-         *  These settings may be safe for 3 clients to connect reliably, can go faster if you have less
+         *  If you use more than one connection adjust, for example, settings like 15ms interval, 0 latency, 120ms timout.
+         *  These settings may be safe for 3 clients to connect reliably, set faster values if you have less
          *  connections. 
          *  
          *  Min interval (unit: 1.25ms): 12 * 1.25ms = 15 ms,
@@ -94,11 +94,10 @@ static uint32_t userOnPassKeyRequest()
          *  0 latency (Number of intervals allowed to skip),
          *  TimeOut (unit: 10ms) 51 * 10ms = 510ms. Timeout should be minimum 100ms.
          */
-#define BLEMIDI_CLIENT_COMM_MIN_INTERVAL     6       // 7.5ms
-#define BLEMIDI_CLIENT_COMM_MAX_INTERVAL     35      // 40ms
-#define BLEMIDI_CLIENT_COMM_LATENCY          0    
-#define BLEMIDI_CLIENT_COMM_TIMEOUT          400     //4000ms
-
+#define BLEMIDI_CLIENT_COMM_MIN_INTERVAL 6  // 7.5ms
+#define BLEMIDI_CLIENT_COMM_MAX_INTERVAL 35 // 40ms
+#define BLEMIDI_CLIENT_COMM_LATENCY 0
+#define BLEMIDI_CLIENT_COMM_TIMEOUT 400 //4000ms
 
 /*
 #############################################
@@ -129,7 +128,7 @@ BEGIN_BLEMIDI_NAMESPACE
 #define BLEMIDI_CLIENT_PAIR_DUMMY 0x00
 #endif
 
-/** Set security method.
+/** Set the security method.
      *  bonding
      *  man in the middle protection
      *  pair. secure connections
@@ -163,10 +162,14 @@ protected:
                 {
                     /** Ready to connect now */
                     doConnect = true;
-                    /** Save the device reference in a global for the client to use*/
+                    /** Save the device reference in a public variable the client can use*/
                     advDevice = *advertisedDevice;
                     /** stop scan before connecting */
                     NimBLEDevice::getScan()->stop();
+                }
+                else
+                {
+                    Serial.println("Name error");
                 }
             }
             else
@@ -180,7 +183,7 @@ protected:
 /** Define a funtion to handle the callbacks when scan ends */
 void scanEndedCB(NimBLEScanResults results);
 
-/** Define the class that perform Client Midi (nimBLE) */
+/** Define the class that performs Client Midi (nimBLE) */
 class BLEMIDI_Client_ESP32
 {
 private:
@@ -195,7 +198,7 @@ private:
 
     friend class AdvertisedDeviceCallbacks;
     friend class MyClientCallbacks;
-    friend class MIDI_NAMESPACE::MidiInterface<BLEMIDI_Transport<BLEMIDI_Client_ESP32>, MySettings>;//
+    friend class MIDI_NAMESPACE::MidiInterface<BLEMIDI_Transport<BLEMIDI_Client_ESP32>, MySettings>; //
 
     AdvertisedDeviceCallbacks myAdvCB;
 
@@ -221,8 +224,11 @@ public:
 
     void write(uint8_t *data, uint8_t length)
     {
-        if (myAdvCB.enableConnection)
-            _characteristic->writeValue(data, length, true);
+        if (!myAdvCB.enableConnection)
+            return;
+        if (_characteristic == NULL)
+            return;
+        _characteristic->writeValue(data, length, true);
     }
 
     bool available(byte *pvBuffer);
@@ -230,13 +236,13 @@ public:
     void add(byte value)
     {
         // called from BLE-MIDI, to add it to a buffer here
-        xQueueSend(mRxQueue, &value, portMAX_DELAY);
+        xQueueSend(mRxQueue, &value, portMAX_DELAY/2);
     }
 
 protected:
     void receive(uint8_t *buffer, size_t length)
     {
-        // forward the buffer so it can be parsed
+        // forward the buffer so that it can be parsed
         _bleMidiTransport->receive(buffer, length);
     }
 
@@ -262,7 +268,7 @@ protected:
     bool connect();
 };
 
-/** Define the class that perform interrupts callbacks */
+/** Define the class that performs interruption callbacks */
 class MyClientCallbacks : public BLEClientCallbacks
 {
 public:
@@ -300,7 +306,7 @@ protected:
             _bluetoothEsp32->disconnected();
         }
 
-        //Try reconnection or look for a new one
+        //Try reconnection or search a new one
         NimBLEDevice::getScan()->start(3, scanEndedCB);
     }
 
@@ -338,7 +344,7 @@ bool BLEMIDI_Client_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class
     _bleMidiTransport = bleMidiTransport;
 
     std::string strDeviceName(deviceName);
-    if (strDeviceName == "") // Connect to first midi server found
+    if (strDeviceName == "") // Connect to the first midi server found
     {
         myAdvCB.specificTarget = false;
         myAdvCB.nameTarget = "";
@@ -349,7 +355,7 @@ bool BLEMIDI_Client_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class
         strDeviceName = BLEMIDI_CLIENT_DEFAULT_NAME;
 #endif
     }
-    else // Connect to a specific name or addr
+    else // Connect to a specific name or address
     {
         myAdvCB.specificTarget = true;
         myAdvCB.nameTarget = strDeviceName;
@@ -368,9 +374,9 @@ bool BLEMIDI_Client_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class
     // Core_0 runs here, core_1 runs the BLE stack
     mRxQueue = xQueueCreate(256, sizeof(uint8_t)); // TODO Settings::MaxBufferSize
 
-    NimBLEDevice::setSecurityIOCap(BLEMIDI_CLIENT_SECURITY_CAP); // Attenction, may need passkey
+    NimBLEDevice::setSecurityIOCap(BLEMIDI_CLIENT_SECURITY_CAP); // Attention, it may need a passkey
     NimBLEDevice::setSecurityAuth(BLEMIDI_CLIENT_SECURITY_AUTH);
-    
+
     /** Optional: set the transmit power, default is 3db */
     NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
 
@@ -411,14 +417,17 @@ bool BLEMIDI_Client_ESP32::available(byte *pvBuffer)
 /** Notification receiving handler callback */
 void BLEMIDI_Client_ESP32::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify)
 {
-    if (uxQueueSpacesAvailable(mRxQueue) >= length) //Don't overflow the queue. If the queue is overflowed, comunication breaks out
-        receive(pData, length);
+    if (this->_characteristic == pRemoteCharacteristic) //Redundant protection
+    {
+        if (uxQueueSpacesAvailable(mRxQueue) >= length) //Don't overflow the queue. If the queue is overflowed, comunication breaks out
+            receive(pData, length);
+    }
 }
 
 void BLEMIDI_Client_ESP32::scan()
 {
-    // Retrieve a Scanner and set the callback we want to use to be informed when we
-    // have detected a new device.  Specify that we want active scanning and start the
+    // Retrieve a Scanner and set the callback you want to use to be informed when a new device is detected.
+    // Specify that you want active scanning and start the
     // scan to run for 3 seconds.
     myAdvCB.scanDone = true;
     NimBLEScan *pBLEScan = BLEDevice::getScan();
@@ -439,10 +448,10 @@ bool BLEMIDI_Client_ESP32::connect()
     Serial.println("Try Connection...");
     using namespace std::placeholders; //<- for bind funtion in callback notification
 
-    /** Check if we have a client we should reuse first /
-        / Special case when we already know this device
-         *  This saves considerable time and power.
-         */
+    /** Check if we have a client we should reuse first
+     *  Special case when we already know this device
+     *  This saves considerable time and power.
+     */
 
     if (_client)
     {
@@ -450,7 +459,6 @@ bool BLEMIDI_Client_ESP32::connect()
         {
             if (_client->connect(&myAdvCB.advDevice, false))
             {
-                //_client->updateConnParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL, BLEMIDI_CLIENT_COMM_LATENCY, BLEMIDI_CLIENT_COMM_TIMEOUT);
                 if (_characteristic->canNotify())
                 {
                     if (!_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
@@ -484,8 +492,8 @@ bool BLEMIDI_Client_ESP32::connect()
     _client = BLEDevice::createClient();
 
     _client->setClientCallbacks(new MyClientCallbacks(this), false);
-    
-    _client->setConnectionParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL+10, BLEMIDI_CLIENT_COMM_LATENCY+1, BLEMIDI_CLIENT_COMM_TIMEOUT+10);
+
+    _client->setConnectionParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL + 10, BLEMIDI_CLIENT_COMM_LATENCY + 1, BLEMIDI_CLIENT_COMM_TIMEOUT + 10);
     /** Set how long we are willing to wait for the connection to complete (seconds), default is 30. */
     _client->setConnectTimeout(15);
 
@@ -497,7 +505,6 @@ bool BLEMIDI_Client_ESP32::connect()
         Serial.println("Failed to connect, deleted client");
         return false;
     }
-    vTaskDelay(100);
 
     if (!_client->isConnected())
     {
@@ -506,7 +513,6 @@ bool BLEMIDI_Client_ESP32::connect()
         _client = nullptr;
         return false;
     }
-    //_client->updateConnParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL, BLEMIDI_CLIENT_COMM_LATENCY, BLEMIDI_CLIENT_COMM_TIMEOUT);
 
     Serial.print("Connected to: ");
     Serial.print(myAdvCB.advDevice.getName().c_str());
@@ -560,8 +566,9 @@ void scanEndedCB(NimBLEScanResults results)
 }
 
 END_BLEMIDI_NAMESPACE
-/*! \brief Create an instance for ESP32 named "Prefix + <DeviceName> + Subfix"
-    It will try to connect to a specific server with equal name or addr than <DeviceName>
+
+/*! \brief Create an instance for ESP32 named <DeviceName>, and adviertise it like "Prefix + <DeviceName> + Subfix"
+    It will try to connect to a specific server with equal name or addr than <DeviceName>. If <DeviceName> is "", it will connect to first midi server
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name)                                                        \
     BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32> BLE##Name(DeviceName); \
