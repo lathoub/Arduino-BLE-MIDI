@@ -10,7 +10,7 @@
 #include "BLEMIDI_Defs.h"
 #include "BLEMIDI_Namespace.h"
 
-#define CHECK_BIT(var,pos) (!!((var) & (1<<(pos))))
+#define CHECK_BIT(var, pos) (!!((var) & (1 << (pos))))
 
 BEGIN_BLEMIDI_NAMESPACE
 
@@ -77,7 +77,7 @@ public:
 
     void endTransmission()
     {
-        if (mTxBuffer[mTxIndex - 1] == 0xF7)
+        if (mTxBuffer[mTxIndex - 1] == MIDI_NAMESPACE::MidiType::SystemExclusiveEnd)
         {
             if (mTxIndex >= sizeof(mTxBuffer))
             {
@@ -90,7 +90,7 @@ public:
             {
                 mTxBuffer[mTxIndex - 1] = mTimestampLow; // or generate new ?
             }
-            mTxBuffer[mTxIndex++] = 0xF7;
+            mTxBuffer[mTxIndex++] = MIDI_NAMESPACE::MidiType::SystemExclusiveEnd;
         }
 
         mBleClass.write(mTxBuffer, mTxIndex);
@@ -168,8 +168,11 @@ protected:
         *timestamp = (currentTimeStamp & 0x7F) | 0x80;     // 7 bits plus MSB
     }
 
-    static void setMidiTimestamp(uint8_t header, uint8_t *timestamp)
+    static uint16_t setMidiTimestamp(uint8_t header, uint8_t timestamp)
     {
+        auto timestampHigh = 0x3f & header;
+        auto timestampLow  = 0x7f & timestamp;
+        return (timestampLow + (timestampHigh << 7));
     }
 
 public:
@@ -241,9 +244,7 @@ public:
 
         if (signatureIs1)
         {
-            auto timestampLow = 0x7f & timestampByte;
-            timestamp = 0;
-            timestampLow + (timestampHigh << 7);
+            timestamp = setMidiTimestamp(headerByte, timestampByte);
         }
         else
         {
@@ -286,17 +287,17 @@ public:
 
                 auto midiType = buffer[lPtr] & 0xF0;
                 if (sysExContinuation)
-                    midiType = 0xF0;
+                    midiType = MIDI_NAMESPACE::MidiType::SystemExclusive;
 
                 // Too much data
                 // If not System Common or System Real-Time, send it as running status
                 switch (midiType)
                 {
-                case 0x80:
-                case 0x90:
-                case 0xA0:
-                case 0xB0:
-                case 0xE0:
+                case MIDI_NAMESPACE::MidiType::NoteOff:
+                case MIDI_NAMESPACE::MidiType::NoteOn:
+                case MIDI_NAMESPACE::MidiType::AfterTouchPoly:
+                case MIDI_NAMESPACE::MidiType::ControlChange:
+                case MIDI_NAMESPACE::MidiType::PitchBend:
                     for (auto i = lPtr; i < rPtr; i = i + 2)
                     {
                         mBleClass.add(lastStatus);
@@ -304,15 +305,15 @@ public:
                         mBleClass.add(buffer[i + 2]);
                     }
                     break;
-                case 0xC0:
-                case 0xD0:
+                case MIDI_NAMESPACE::MidiType::ProgramChange:
+                case MIDI_NAMESPACE::MidiType::AfterTouchChannel:
                     for (auto i = lPtr; i < rPtr; i = i + 1)
                     {
                         mBleClass.add(lastStatus);
                         mBleClass.add(buffer[i + 1]);
                     }
                     break;
-                case 0xF0:
+                case MIDI_NAMESPACE::MidiType::SystemExclusive:
                     mBleClass.add(buffer[lPtr]);
                     for (auto i = lPtr; i < rPtr; i++)
                         mBleClass.add(buffer[i + 1]);
@@ -325,14 +326,10 @@ public:
                     signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
                     if (signatureIs1)
                     {
-                        auto timestampLow = 0x7f & timestampByte;
-                        timestamp = timestampLow + (timestampHigh << 7);
-
-                     //   std::cout << "timestamp low: 0x" << std::hex << (int)timestampByte << std::endl;
+                        timestamp = setMidiTimestamp(headerByte, timestampByte);
                     }
 
                     rPtr++;
-                    // std::cout << "end of SysEx: 0x" << std::hex << (int)buffer[rPtr] << std::endl;
 
                     break;
                 default:
@@ -340,27 +337,22 @@ public:
                 }
             }
 
-        rPtr++;
+            rPtr++;
 
-        if (rPtr >= length)
-            return; // end of packet
+            if (rPtr >= length)
+                return; // end of packet
 
-        timestampByte = buffer[rPtr++];
-        signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
-        if (signatureIs1)
-        {
-            auto timestampLow = 0x7f & timestampByte;
-            timestamp = timestampLow + (timestampHigh << 7);
+            timestampByte = buffer[rPtr++];
+            signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
+            if (signatureIs1)
+            {
+                timestamp = setMidiTimestamp(headerByte, timestampByte);
+            }
 
-           // std::cout << "timestamp low is 0x" << std::hex << (int)timestampByte << std::endl;
-        }
-
-       // std::cout << "first" << std::hex << (int)buffer[lPtr] << std::endl;
-
-        // Point to next status
-        lPtr = rPtr;
-        if (lPtr >= length)
-            return; //end of packet
+            // Point to next status
+            lPtr = rPtr;
+            if (lPtr >= length)
+                return; //end of packet
         }
     }
 };
