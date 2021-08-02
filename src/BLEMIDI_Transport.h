@@ -171,7 +171,7 @@ protected:
     static uint16_t setMidiTimestamp(uint8_t header, uint8_t timestamp)
     {
         auto timestampHigh = 0x3f & header;
-        auto timestampLow  = 0x7f & timestamp;
+        auto timestampLow = 0x7f & timestamp;
         return (timestampLow + (timestampHigh << 7));
     }
 
@@ -230,23 +230,23 @@ public:
         // lastStatus used to capture runningStatus
         byte lastStatus;
 
-        byte headerByte = buffer[lPtr++];
-        auto signatureIs1 = CHECK_BIT(headerByte, 7 - 1);
-        auto reservedIs0 = !CHECK_BIT(headerByte, 6 - 1);
+        lPtr++;
+        byte headerByte = buffer[lPtr];
+        auto signatureIs1 = CHECK_BIT(headerByte, 7 - 1); // must be 1
+        auto reservedIs0 = !CHECK_BIT(headerByte, 6 - 1); // must be 0
         auto timestampHigh = 0x3f & headerByte;
 
-        byte timestampByte = buffer[lPtr++];
-        signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
-
+        lPtr++;
+        byte timestampByte = buffer[lPtr];
         uint16_t timestamp = 0;
 
         bool sysExContinuation = false;
 
-        if (signatureIs1)
+        if (CHECK_BIT(timestampByte, 7 - 1)) // if bit 7 is 1, it's a timestampByte
         {
             timestamp = setMidiTimestamp(headerByte, timestampByte);
         }
-        else
+        else // if bit 7 is 0, it's the Continuation of a previous SysEx
         {
             sysExContinuation = true;
             lPtr--;
@@ -298,7 +298,7 @@ public:
                 case MIDI_NAMESPACE::MidiType::AfterTouchPoly:
                 case MIDI_NAMESPACE::MidiType::ControlChange:
                 case MIDI_NAMESPACE::MidiType::PitchBend:
-                    for (auto i = lPtr; i < rPtr; i = i + 2)
+                    for (byte i = lPtr; i < rPtr; i = i + 2)
                     {
                         mBleClass.add(lastStatus);
                         mBleClass.add(buffer[i + 1]);
@@ -307,7 +307,7 @@ public:
                     break;
                 case MIDI_NAMESPACE::MidiType::ProgramChange:
                 case MIDI_NAMESPACE::MidiType::AfterTouchChannel:
-                    for (auto i = lPtr; i < rPtr; i = i + 1)
+                    for (byte i = lPtr; i < rPtr; i = i + 1)
                     {
                         mBleClass.add(lastStatus);
                         mBleClass.add(buffer[i + 1]);
@@ -315,16 +315,16 @@ public:
                     break;
                 case MIDI_NAMESPACE::MidiType::SystemExclusive:
                     mBleClass.add(buffer[lPtr]);
-                    for (auto i = lPtr; i < rPtr; i++)
+                    for (byte i = lPtr; i < rPtr; i++)
                         mBleClass.add(buffer[i + 1]);
 
                     rPtr++;
                     if (rPtr >= length)
                         return; // end of packet
 
-                    timestampByte = buffer[rPtr++];
-                    signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
-                    if (signatureIs1)
+                    rPtr++;
+                    timestampByte = buffer[rPtr];
+                    if (CHECK_BIT(timestampByte, 7 - 1))
                     {
                         timestamp = setMidiTimestamp(headerByte, timestampByte);
                     }
@@ -342,7 +342,8 @@ public:
             if (rPtr >= length)
                 return; // end of packet
 
-            timestampByte = buffer[rPtr++];
+            rPtr++;
+            timestampByte = buffer[rPtr];
             signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
             if (signatureIs1)
             {
