@@ -10,9 +10,11 @@
 #include "BLEMIDI_Defs.h"
 #include "BLEMIDI_Namespace.h"
 
+#define CHECK_BIT(var,pos) (!!((var) & (1<<(pos))))
+
 BEGIN_BLEMIDI_NAMESPACE
 
-template<class T, class _Settings = DefaultSettings>
+template <class T, class _Settings = DefaultSettings>
 class BLEMIDI_Transport
 {
     typedef _Settings Settings;
@@ -23,30 +25,30 @@ private:
 
     byte mTxBuffer[Settings::MaxBufferSize]; // minimum 5 bytes
     unsigned mTxIndex = 0;
-    
+
     char mDeviceName[24];
 
     uint8_t mTimestampLow;
 
 private:
-	T mBleClass;
+    T mBleClass;
 
-public:    
-    BLEMIDI_Transport(const char* deviceName)
-	{
+public:
+    BLEMIDI_Transport(const char *deviceName)
+    {
         strncpy(mDeviceName, deviceName, sizeof(mDeviceName));
-        
+
         mRxIndex = 0;
         mTxIndex = 0;
-	}
+    }
 
-public:	
+public:
     static const bool thruActivated = false;
-	
+
     void begin()
     {
         mBleClass.begin(mDeviceName, this);
-    }	
+    }
 
     void end()
     {
@@ -58,10 +60,10 @@ public:
         getMidiTimestamp(&mTxBuffer[0], &mTxBuffer[1]);
         mTxIndex = 2;
         mTimestampLow = mTxBuffer[1]; // or generate new ?
-      
+
         return true;
     }
-    
+
     void write(byte inData)
     {
         if (mTxIndex >= sizeof(mTxBuffer))
@@ -81,8 +83,8 @@ public:
             {
                 mBleClass.write(mTxBuffer, mTxIndex - 1);
 
-                mTxIndex = 1; // keep header
-                mTxBuffer[mTxIndex++] = mTimestampLow; // or generate new ?  
+                mTxIndex = 1;                          // keep header
+                mTxBuffer[mTxIndex++] = mTimestampLow; // or generate new ?
             }
             else
             {
@@ -94,7 +96,7 @@ public:
         mBleClass.write(mTxBuffer, mTxIndex);
         mTxIndex = 0;
     }
- 
+
     byte read()
     {
         return mRxBuffer[--mRxIndex];
@@ -104,13 +106,14 @@ public:
     {
         uint8_t byte;
         auto success = mBleClass.available(&byte);
-        if (!success) return mRxIndex;
+        if (!success)
+            return mRxIndex;
 
         mRxBuffer[mRxIndex++] = byte;
 
         return mRxIndex;
     }
-       
+
 protected:
     /*
      The first byte of all BLE packets must be a header byte. This is followed by timestamp bytes and MIDI messages.
@@ -157,31 +160,33 @@ protected:
      and the MSB of both bytes are set to indicate that this is a header byte.
      Both bytes are placed into the first two position of an array in preparation for a MIDI message.
      */
-    static void getMidiTimestamp (uint8_t *header, uint8_t *timestamp)
+    static void getMidiTimestamp(uint8_t *header, uint8_t *timestamp)
     {
         auto currentTimeStamp = millis() & 0x01FFF;
-        
-        *header = ((currentTimeStamp >> 7) & 0x3F) | 0x80;        // 6 bits plus MSB
-        *timestamp = (currentTimeStamp & 0x7F) | 0x80;            // 7 bits plus MSB
+
+        *header = ((currentTimeStamp >> 7) & 0x3F) | 0x80; // 6 bits plus MSB
+        *timestamp = (currentTimeStamp & 0x7F) | 0x80;     // 7 bits plus MSB
     }
-    
-    static void setMidiTimestamp (uint8_t header, uint8_t *timestamp)
+
+    static void setMidiTimestamp(uint8_t header, uint8_t *timestamp)
     {
     }
-    
-public:
-	// callbacks
-	void(*_connectedCallback)() = nullptr;
-	void(*_disconnectedCallback)() = nullptr;
 
 public:
-	void setHandleConnected(void(*fptr)()) {
-		_connectedCallback = fptr;
-	}
+    // callbacks
+    void (*_connectedCallback)() = nullptr;
+    void (*_disconnectedCallback)() = nullptr;
 
-	void setHandleDisconnected(void(*fptr)()) {
-		_disconnectedCallback = fptr;
-	}
+public:
+    void setHandleConnected(void (*fptr)())
+    {
+        _connectedCallback = fptr;
+    }
+
+    void setHandleDisconnected(void (*fptr)())
+    {
+        _disconnectedCallback = fptr;
+    }
 
     /*
     The general form of a MIDI message follows:
@@ -213,45 +218,79 @@ public:
     MIDI messages. In the MIDI BLE protocol, the System Real-Time messages must be deinterleaved
     from other messages – except for System Exclusive messages.
     */
-	void receive(byte* buffer, size_t length)
-	{
+    void receive(byte *buffer, size_t length)
+    {
         // Pointers used to search through payload.
         byte lPtr = 0;
         byte rPtr = 0;
+
         // lastStatus used to capture runningStatus
         byte lastStatus;
-        // Decode first packet -- SHALL be "Full MIDI message"
-        lPtr = 2; //Start at first MIDI status -- SHALL be "MIDI status"
-        
+
+        byte headerByte = buffer[lPtr++];
+        auto signatureIs1 = CHECK_BIT(headerByte, 7 - 1);
+        auto reservedIs0 = !CHECK_BIT(headerByte, 6 - 1);
+        auto timestampHigh = 0x3f & headerByte;
+
+        byte timestampByte = buffer[lPtr++];
+        signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
+
+        uint16_t timestamp = 0;
+
+        bool sysExContinuation = false;
+
+        if (signatureIs1)
+        {
+            auto timestampLow = 0x7f & timestampByte;
+            timestamp = 0;
+            timestampLow + (timestampHigh << 7);
+        }
+        else
+        {
+            sysExContinuation = true;
+            lPtr--;
+        }
+
         //While statement contains incrementing pointers and breaks when buffer size exceeded.
         while (true)
         {
             lastStatus = buffer[lPtr];
-            
-            if( (buffer[lPtr] < 0x80))
+
+            if ((buffer[lPtr] < 0x80) && !sysExContinuation)
                 return; // Status message not present, bail
 
             // Point to next non-data byte
             rPtr = lPtr;
-            while( (buffer[rPtr + 1] < 0x80) && (rPtr < (length - 1)) )
+            while ((buffer[rPtr + 1] < 0x80) && (rPtr < (length - 1)))
                 rPtr++;
-            if (buffer[rPtr + 1] == 0xF7) rPtr++;
 
             // look at l and r pointers and decode by size.
-            if( rPtr - lPtr < 1 ) {
+            if (rPtr - lPtr < 1)
+            {
                 // Time code or system
                 mBleClass.add(lastStatus);
-            } else if( rPtr - lPtr < 2 ) {
+            }
+            else if (rPtr - lPtr < 2)
+            {
                 mBleClass.add(lastStatus);
                 mBleClass.add(buffer[lPtr + 1]);
-            } else if( rPtr - lPtr < 3 ) {
+            }
+            else if (rPtr - lPtr < 3)
+            {
                 mBleClass.add(lastStatus);
                 mBleClass.add(buffer[lPtr + 1]);
                 mBleClass.add(buffer[lPtr + 2]);
-            } else {
+            }
+            else
+            {
+
+                auto midiType = buffer[lPtr] & 0xF0;
+                if (sysExContinuation)
+                    midiType = 0xF0;
+
                 // Too much data
                 // If not System Common or System Real-Time, send it as running status
-                switch(buffer[lPtr] & 0xF0)
+                switch (midiType)
                 {
                 case 0x80:
                 case 0x90:
@@ -277,19 +316,53 @@ public:
                     mBleClass.add(buffer[lPtr]);
                     for (auto i = lPtr; i < rPtr; i++)
                         mBleClass.add(buffer[i + 1]);
+
+                    rPtr++;
+                    if (rPtr >= length)
+                        return; // end of packet
+
+                    timestampByte = buffer[rPtr++];
+                    signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
+                    if (signatureIs1)
+                    {
+                        auto timestampLow = 0x7f & timestampByte;
+                        timestamp = timestampLow + (timestampHigh << 7);
+
+                     //   std::cout << "timestamp low: 0x" << std::hex << (int)timestampByte << std::endl;
+                    }
+
+                    rPtr++;
+                    // std::cout << "end of SysEx: 0x" << std::hex << (int)buffer[rPtr] << std::endl;
+
                     break;
                 default:
                     break;
                 }
             }
-            
-            // Point to next status
-            lPtr = rPtr + 2;
-            if(lPtr >= length)
-                return; //end of packet
-        }
-	}
 
+        rPtr++;
+
+        if (rPtr >= length)
+            return; // end of packet
+
+        timestampByte = buffer[rPtr++];
+        signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
+        if (signatureIs1)
+        {
+            auto timestampLow = 0x7f & timestampByte;
+            timestamp = timestampLow + (timestampHigh << 7);
+
+           // std::cout << "timestamp low is 0x" << std::hex << (int)timestampByte << std::endl;
+        }
+
+       // std::cout << "first" << std::hex << (int)buffer[lPtr] << std::endl;
+
+        // Point to next status
+        lPtr = rPtr;
+        if (lPtr >= length)
+            return; //end of packet
+        }
+    }
 };
 
 struct MySettings : public MIDI_NAMESPACE::DefaultSettings
@@ -298,4 +371,3 @@ struct MySettings : public MIDI_NAMESPACE::DefaultSettings
 };
 
 END_BLEMIDI_NAMESPACE
-
