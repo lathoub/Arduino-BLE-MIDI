@@ -314,8 +314,8 @@ public:
                 case MIDI_NAMESPACE::MidiType::SystemExclusive:
 
                     // do we have a complete sysex?
-                    if ((rPtr + 1 < length) && (buffer[rPtr + 1] == 0xF7))
-                        rPtr--;
+                    if ((rPtr + 1 < length) && (buffer[rPtr + 1] == MIDI_NAMESPACE::MidiType::SystemExclusiveEnd))
+                        rPtr--; // before end is the timestampLow
 
                     mBleClass.add(buffer[lPtr]);
                     for (byte i = lPtr; i < rPtr; i++)
