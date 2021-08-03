@@ -312,6 +312,11 @@ public:
                     }
                     break;
                 case MIDI_NAMESPACE::MidiType::SystemExclusive:
+
+                    // do we have a complete sysex?
+                    if ((rPtr + 1 < length) && (buffer[rPtr + 1] == 0xF7))
+                        rPtr--;
+
                     mBleClass.add(buffer[lPtr]);
                     for (byte i = lPtr; i < rPtr; i++)
                         mBleClass.add(buffer[i + 1]);
@@ -339,8 +344,7 @@ public:
                 return; // end of packet
 
             timestampByte = buffer[rPtr++];
-            signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
-            if (signatureIs1)
+            if (CHECK_BIT(timestampByte, 7 - 1))
             {
                 timestamp = setMidiTimestamp(headerByte, timestampByte);
             }
