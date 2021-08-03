@@ -230,14 +230,12 @@ public:
         // lastStatus used to capture runningStatus
         byte lastStatus;
 
-        lPtr++;
-        byte headerByte = buffer[lPtr];
+        byte headerByte = buffer[lPtr++];
         auto signatureIs1 = CHECK_BIT(headerByte, 7 - 1); // must be 1
         auto reservedIs0 = !CHECK_BIT(headerByte, 6 - 1); // must be 0
         auto timestampHigh = 0x3f & headerByte;
 
-        lPtr++;
-        byte timestampByte = buffer[lPtr];
+        byte timestampByte = buffer[lPtr++];
         uint16_t timestamp = 0;
 
         bool sysExContinuation = false;
@@ -322,8 +320,7 @@ public:
                     if (rPtr >= length)
                         return; // end of packet
 
-                    rPtr++;
-                    timestampByte = buffer[rPtr];
+                    timestampByte = buffer[rPtr++];
                     if (CHECK_BIT(timestampByte, 7 - 1))
                     {
                         timestamp = setMidiTimestamp(headerByte, timestampByte);
@@ -338,12 +335,10 @@ public:
             }
 
             rPtr++;
-
             if (rPtr >= length)
                 return; // end of packet
 
-            rPtr++;
-            timestampByte = buffer[rPtr];
+            timestampByte = buffer[rPtr++];
             signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
             if (signatureIs1)
             {
