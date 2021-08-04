@@ -29,6 +29,9 @@ void receive(byte* buffer, size_t length)
 
     // lastStatus used to capture runningStatus
     byte lastStatus;
+	// previousStatus used to continue a runningStatus interrupted by a timeStamp or a System Message.
+	byte previousStatus = 0x00;
+	
 
     byte headerByte = buffer[lPtr++];
 //    auto signatureIs1 = CHECK_BIT(headerByte, 7 - 1);
@@ -39,6 +42,8 @@ void receive(byte* buffer, size_t length)
     uint16_t timestamp = 0;
 
     bool sysExContinuation = false;
+	bool runningStatusContinuation = false;
+	
 
     if (timestampByte >= 80) {
         auto timestampLow = 0x7f & timestampByte;
@@ -53,31 +58,75 @@ void receive(byte* buffer, size_t length)
     while (true)
     {
         lastStatus = buffer[lPtr];
-
-        if ((buffer[lPtr] < 0x80) && !sysExContinuation)
-            return; // Status message not present, bail
+		
+		if(previousStatus==0x00){
+			if ((lastStatus < 0x80) && !sysExContinuation)
+				return; // Status message not present and it is not a runningStatus continuation, bail
+		}else if(lastStatus < 0x80)
+		{
+			lastStatus = previousStatus;
+			runningStatusContinuation = true;
+		}
+			
 
         // Point to next non-data byte
         rPtr = lPtr;
         while ((buffer[rPtr + 1] < 0x80) && (rPtr < (length - 1)))
             rPtr++;
 
-        // look at l and r pointers and decode by size.
-        if (rPtr - lPtr < 1) {
-            // Time code or system
-            transmitMIDIonDIN(lastStatus, 0, 0);
-        }
-        else if (rPtr - lPtr < 2) {
-            transmitMIDIonDIN(lastStatus, buffer[lPtr + 1], 0);
-        }
-        else if (rPtr - lPtr < 3) {
-            transmitMIDIonDIN(lastStatus, buffer[lPtr + 1], buffer[lPtr + 2]);
-        }
-        else {
-            // Too much data
-            // If not System Common or System Real-Time, send it as running status
+		if(!runningStatusContinuation){
+			// look at l and r pointers and decode by size.
+			if (rPtr - lPtr < 1) {
+				// Time code or system or "2 bytes" running Message
+				transmitMIDIonDIN(buffer[lPtr], 0, 0);
+			}
+			else if (rPtr - lPtr < 2) {
+				transmitMIDIonDIN(buffer[lPtr], buffer[lPtr + 1], 0);
+			}
+			else if (rPtr - lPtr < 3) {
+				transmitMIDIonDIN(buffer[lPtr], buffer[lPtr + 1], buffer[lPtr + 2]);
+			}
+			else {
+				// Too much data
+				// If not System Common or System Real-Time, send it as running status
 
-            auto midiType = buffer[lPtr] & 0xF0;
+				auto midiType = lastStatus & 0xF0;
+				if (sysExContinuation)
+					midiType = 0xF0;
+
+				switch (midiType)
+				{
+				case 0x80:
+				case 0x90:
+				case 0xA0:
+				case 0xB0:
+				case 0xE0:
+					for (auto i = lPtr; i < rPtr; i = i + 2)
+					{
+						transmitMIDIonDIN(lastStatus, buffer[i + 1], buffer[i + 2]);
+					}
+					break;
+				case 0xC0:
+				case 0xD0:
+					for (auto i = lPtr; i < rPtr; i = i + 1)
+					{
+						transmitMIDIonDIN(lastStatus, buffer[i + 1], 0);
+					}
+					break;
+				case 0xF0:
+					transmitMIDIonDIN(buffer[lPtr], 0, 0);
+					for (auto i = lPtr; i < rPtr; i++)
+						transmitMIDIonDIN(buffer[i + 1], 0, 0);
+
+					break;
+
+				default:
+					break;
+				}
+			}
+		}else
+		{
+			auto midiType = lastStatus & 0xF0;
             if (sysExContinuation)
                 midiType = 0xF0;
 
@@ -88,32 +137,34 @@ void receive(byte* buffer, size_t length)
             case 0xA0:
             case 0xB0:
             case 0xE0:
-                for (auto i = lPtr; i < rPtr; i = i + 2)
+				//3 bytes full Midi -> 2 bytes runningStatus
+                for (auto i = lPtr; i <= rPtr; i = i + 2)
                 {
-                    transmitMIDIonDIN(lastStatus, buffer[i + 1], buffer[i + 2]);
+                    transmitMIDIonDIN(lastStatus, buffer[i], buffer[i + 1]);
                 }
                 break;
             case 0xC0:
             case 0xD0:
-                for (auto i = lPtr; i < rPtr; i = i + 1)
+				//2 bytes full Midi -> 1 byte runningStatus
+                for (auto i = lPtr; i <= rPtr; i = i + 1)
                 {
-                    transmitMIDIonDIN(lastStatus, buffer[i + 1], 0);
+                    transmitMIDIonDIN(lastStatus, buffer[i], 0);
                 }
-                break;
-            case 0xF0:
-                transmitMIDIonDIN(buffer[lPtr], 0, 0);
-                for (auto i = lPtr; i < rPtr; i++)
-                    transmitMIDIonDIN(buffer[i + 1], 0, 0);
-
                 break;
 
             default:
                 break;
             }
-        }
+			runningStatusContinuation = false;
+		}
 
         if (++rPtr >= length)
             return; // end of packet
+		
+		if(lastStatus < 0xf0) //exclude System Message. They must not be RunningStatus
+		{ 
+			previousStatus = lastStatus;
+		}
 
         timestampByte = buffer[rPtr++];
         if (timestampByte >= 80) // is bit 7 set?
@@ -203,16 +254,55 @@ int main()
     receive(blePacketWithThreeMIDIMessage, sizeof(blePacketWithThreeMIDIMessage));
 
 
-//    std::cout << std::endl << "2 MIDI messages with running status" << std::endl;
+    std::cout << std::endl << "2 MIDI messages with multiple running status" << std::endl;
+ 
+    byte twoMIDIMessageWithRunningStatus[] = { 0xA9, 0xAD,
+											0xD1, 0x74, //Full Midi 2 bytes(afterTouch)
+											0x73, //running
+											0xAE, //timeStamp
+											0x72, //running after timeStamp
+											0xAF, //timeStamp
+											0x71, //running after timeStamp
+											0x70,
+											0x69,
+											0x68,
+											0xB2, //
+											0x92, 0x36, 0x70, //Full Midi 3 bytes (noteOn)
+											0xB3, //
+											0x93, 0x37, 0x71,
+											0x38, 0x72,
+											0x39, 0x73,
+											0xB4, //
+											0x40, 0x74
+											};	
+    receive(twoMIDIMessageWithRunningStatus, sizeof(twoMIDIMessageWithRunningStatus));
 
-// TODO
-    
-//    byte twoMIDIMessageWithRunningStatus[] = { 0xA9, 0xAE, 0xD1, 0x74, 0xAF, 0xD2, 0x74, 0xB1 };
-//    receive(twoMIDIMessageWithRunningStatus, sizeof(twoMIDIMessageWithRunningStatus));
 
-//    std::cout << std::endl << "2 MIDI messages with running status" << std::endl;
-//
-//    byte multipleMIDIMessagesMixedType[] = { 0x00 };
-//    receive(multipleMIDIMessagesMixedType, sizeof(multipleMIDIMessagesMixedType));
-
+    std::cout << std::endl << "2 MIDI messages with multiple running status and a System message in middle" << std::endl;
+ 
+    byte twoMIDIMessageWithRunningStatusPlusSys[] = { 0xA9, 0xAD,
+											0xD1, 0x74, //Full Midi 2 bytes(afterTouch)
+											0x73, //running
+											0xAE, //timeStamp
+											0x72, //running after timeStamp
+											0xAF, //timeStamp
+											0x71, //running after timeStamp
+											0x70,
+											0x69,
+											0x68,
+											0xB2, //
+											0xFA, // <- Sys START
+											0xB2,
+											0x92, 0x36, 0x70, //Full Midi 3 bytes (noteOn)
+											0xB3, //
+											0x93, 0x37, 0x71,
+											0x38, 0x72,
+											0xB3, //
+											0xFC, // <- Sys STOP
+											0xB3,
+											0x39, 0x73,
+											0xB4, //
+											0x40, 0x74
+											};	
+    receive(twoMIDIMessageWithRunningStatusPlusSys, sizeof(twoMIDIMessageWithRunningStatusPlusSys));
 }
