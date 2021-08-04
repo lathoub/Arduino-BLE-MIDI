@@ -31,18 +31,16 @@ void receive(byte* buffer, size_t length)
     byte lastStatus;
 
     byte headerByte = buffer[lPtr++];
-    auto signatureIs1 = CHECK_BIT(headerByte, 7 - 1);
-    auto reservedIs0 = !CHECK_BIT(headerByte, 6 - 1);
+//    auto signatureIs1 = CHECK_BIT(headerByte, 7 - 1);
+//    auto reservedIs0 = !CHECK_BIT(headerByte, 6 - 1);
     auto timestampHigh = 0x3f & headerByte;
 
     byte timestampByte = buffer[lPtr++];
-    signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
-
     uint16_t timestamp = 0;
 
     bool sysExContinuation = false;
 
-    if (signatureIs1) {
+    if (timestampByte >= 80) {
         auto timestampLow = 0x7f & timestampByte;
         timestamp = timestampLow + (timestampHigh << 7);
     }
@@ -103,25 +101,15 @@ void receive(byte* buffer, size_t length)
                 }
                 break;
             case 0xF0:
-
-                // do we have a complete sysex?
-                if ((rPtr + 1 < length) && (buffer[rPtr + 1] == 0xF7))
-                {
-                    std::cout << "end: 0x" << std::hex << (int)buffer[rPtr + 1] << std::endl;
-                    rPtr--;
-                }
-
                 transmitMIDIonDIN(buffer[lPtr], 0, 0);
                 for (auto i = lPtr; i < rPtr; i++)
                     transmitMIDIonDIN(buffer[i + 1], 0, 0);
-
-                rPtr++;
-                if (rPtr >= length)
+/*
+                if (++rPtr >= length)
                     return; // end of packet
 
                 timestampByte = buffer[rPtr++];
-                signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
-                if (signatureIs1)
+                if (timestampByte >= 80)
                 {
                     auto timestampLow = 0x7f & timestampByte;
                     timestamp = timestampLow + (timestampHigh << 7);
@@ -130,7 +118,7 @@ void receive(byte* buffer, size_t length)
                 }
 
                 std::cout << "end of SysEx: 0x" << std::hex << (int)buffer[rPtr] << std::endl;
-
+*/
                 break;
 
             default:
@@ -138,16 +126,11 @@ void receive(byte* buffer, size_t length)
             }
         }
 
-        rPtr++;
-        if (rPtr >= length)
+        if (++rPtr >= length)
             return; // end of packet
 
         timestampByte = buffer[rPtr++];
-
-      //  std::cout << "dddd: 0x" << std::hex << (int)timestampByte << std::endl;
-
-        signatureIs1 = CHECK_BIT(timestampByte, 7 - 1);
-        if (signatureIs1)
+        if (timestampByte >= 80) // is bit 7 set?
         {
             auto timestampLow = 0x7f & timestampByte;
             timestamp = timestampLow + (timestampHigh << 7);
@@ -165,26 +148,29 @@ void receive(byte* buffer, size_t length)
 
 int main()
 {
-    byte packet1[] = {0x80, 0xF7, 0x80, 0x34, 0x2B, 0xF7, 0x81, 0x34, 0x2B, 0xF8, 0xF0, 0x00, 0x11};
-    receive(packet1, sizeof(packet1));
+    std::cout << std::endl << "SysEx " << std::endl;
 
-    byte packet2[] = { 0x91, 0x22, 0x33, 0x44, 0x55, 0xF7, 0xF7, 0x80, 0x34, 0x2B, 0xF7, 0x80, 0x34, 0x34 };
-    receive(packet2, sizeof(packet2));
-    
-   
+    byte sysExPart[] = { 0xB0, 0xF4,  // header + timestamp
+                          0xF0, // start SysEx
+                            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // sysex data
+                          0xF4, // timestampLow
+                          0xF7 }; // end of SysEx
+
+    receive(sysExPart, sizeof(sysExPart));
+
     std::cout << std::endl << "SysEx part 1" << std::endl;
 
-    byte sysExPart1[] = { 0xB0, 0xF4, 
-                          0xF0, 
-                          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    byte sysExPart1[] = { 0xB0, 0xF4,  // header + timestamp
+                          0xF0, // start SysEx
+                            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };  // sysex data
     receive(sysExPart1, sizeof(sysExPart1));
 
     std::cout << std::endl << "SysEx part 2" << std::endl;
 
-    byte sysExPart2[] = { 0xB0, 
-                          0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 
-                          0xF4,
-                          0xF7 };
+    byte sysExPart2[] = { 0xB0,  // 1 byte header
+                          0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, // sysex data (cont)
+                          0xF4, // timestampLow
+                          0xF7 }; // end of SysEx
     receive(sysExPart2, sizeof(sysExPart2));
     
 
@@ -197,11 +183,28 @@ int main()
     
     std::cout << std::endl << "ble Packet with 2 MIDI messages" << std::endl;
 
-    byte blePacketWithTwoMIDIMessage[] = { 0xA8, 0xC0, 
-                                           0x90, 0x3E, 0x3E, 
-                                           0xC1, 
+    byte blePacketWithTwoMIDIMessage[] = { 0xA8, 0xC0,
+                                           0x90, 0x3E, 0x3E,
+                                           0xC1,
                                            0x91, 0x3E, 0x3E };
     receive(blePacketWithTwoMIDIMessage, sizeof(blePacketWithTwoMIDIMessage));
+
+    std::cout << std::endl << "ble Packet with 3 MIDI messages" << std::endl;
+
+    byte blePacketWithThreeMIDIMessage[] = { 0xA8, 0xC0,
+                                           0x90, 0x3E, 0x3E,
+                                           0xC1,
+                                           0xF0,
+                                            0x01, 0x02,
+                                           0xC2,
+                                           0xF7,
+                                           0xC3,
+                                           0x91, 0x3E, 0x3E };
+    receive(blePacketWithThreeMIDIMessage, sizeof(blePacketWithThreeMIDIMessage));
+
+
+
+
 
 //    std::cout << std::endl << "2 MIDI messages with running status" << std::endl;
 

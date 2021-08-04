@@ -231,8 +231,8 @@ public:
         byte lastStatus;
 
         byte headerByte = buffer[lPtr++];
-        auto signatureIs1 = CHECK_BIT(headerByte, 7 - 1); // must be 1
-        auto reservedIs0 = !CHECK_BIT(headerByte, 6 - 1); // must be 0
+//        auto signatureIs1 = CHECK_BIT(headerByte, 7 - 1); // must be 1
+//        auto reservedIs0 = !CHECK_BIT(headerByte, 6 - 1); // must be 0
         auto timestampHigh = 0x3f & headerByte;
 
         byte timestampByte = buffer[lPtr++];
@@ -240,7 +240,7 @@ public:
 
         bool sysExContinuation = false;
 
-        if (CHECK_BIT(timestampByte, 7 - 1)) // if bit 7 is 1, it's a timestampByte
+        if (timestampByte >= 80) // if bit 7 is 1, it's a timestampByte
         {
             timestamp = setMidiTimestamp(headerByte, timestampByte);
         }
@@ -250,7 +250,7 @@ public:
             lPtr--;
         }
 
-        //While statement contains incrementing pointers and breaks when buffer size exceeded.
+        // While statement contains incrementing pointers and breaks when buffer size exceeded.
         while (true)
         {
             lastStatus = buffer[lPtr];
@@ -313,25 +313,9 @@ public:
                     break;
                 case MIDI_NAMESPACE::MidiType::SystemExclusive:
 
-                    // do we have a complete sysex?
-                    if ((rPtr + 1 < length) && (buffer[rPtr + 1] == MIDI_NAMESPACE::MidiType::SystemExclusiveEnd))
-                        rPtr--; // before end is the timestampLow
-
                     mBleClass.add(buffer[lPtr]);
                     for (byte i = lPtr; i < rPtr; i++)
                         mBleClass.add(buffer[i + 1]);
-
-                    rPtr++;
-                    if (rPtr >= length)
-                        return; // end of packet
-
-                    timestampByte = buffer[rPtr++];
-                    if (CHECK_BIT(timestampByte, 7 - 1))
-                    {
-                        timestamp = setMidiTimestamp(headerByte, timestampByte);
-                    }
-
-                    rPtr++;
 
                     break;
                 default:
@@ -339,14 +323,14 @@ public:
                 }
             }
 
-            rPtr++;
-            if (rPtr >= length)
+            if (++rPtr >= length)
                 return; // end of packet
 
             timestampByte = buffer[rPtr++];
-            if (CHECK_BIT(timestampByte, 7 - 1))
+            if (timestampByte >= 80) // is bit 7 set?
             {
-                timestamp = setMidiTimestamp(headerByte, timestampByte);
+                timestamp = setMidiTimestamp(headerByte, timestampByte); 
+                // what do to with the timestamp?
             }
 
             // Point to next status
