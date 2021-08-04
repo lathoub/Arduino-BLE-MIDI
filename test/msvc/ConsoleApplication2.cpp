@@ -136,20 +136,20 @@ int main()
 {
     std::cout << std::endl << "SysEx with RealTime msg in the middle --------" << std::endl;
 
-    byte msg[] = { 0xB0, 0xF4,  // header + timestamp
+    byte sysExAndRealTime[] = { 0xB0, 0xF4,  // header + timestamp
                    0xF0,        // start SysEx
                          0x01, 0x02, 0x03, 0x04, // SysEx data
 
+                   // RealTime message in the middle of a SysEx
                    0xF3, // timestampLow
                    0xFA, // Realtime msg: Start
 
-                         0x05, 0x06, 0x07, 0x08, // sysex data
+                         0x05, 0x06, 0x07, 0x08, // rest of sysex data
                    0xF4, // timestampLow
                    0xF7 }; // end of SysEx
 
-    receive(msg, sizeof(msg));
+    receive(sysExAndRealTime, sizeof(sysExAndRealTime));
 
-                                  /*
     std::cout << std::endl << "SysEx ---------" << std::endl;
 
     byte sysExPart[] = { 0xB0, 0xF4,  // header + timestamp
@@ -201,9 +201,6 @@ int main()
                                            0xC3,
                                            0x91, 0x3E, 0x3E };
     receive(blePacketWithThreeMIDIMessage, sizeof(blePacketWithThreeMIDIMessage));
-*/
-
-
 
 
 //    std::cout << std::endl << "2 MIDI messages with running status" << std::endl;
