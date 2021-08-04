@@ -24,8 +24,8 @@ void transmitMIDIonDIN(byte status, byte data1, byte data2)
 void receive(byte* buffer, size_t length)
 {
     // Pointers used to search through payload.
-    byte lPtr = 0;
-    byte rPtr = 0;
+    int lPtr = 0;
+    int rPtr = 0;
 
     // lastStatus used to capture runningStatus
     byte lastStatus;

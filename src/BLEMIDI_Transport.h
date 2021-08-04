@@ -224,8 +224,8 @@ public:
     void receive(byte *buffer, size_t length)
     {
         // Pointers used to search through payload.
-        byte lPtr = 0;
-        byte rPtr = 0;
+        int lPtr = 0;
+        int rPtr = 0;
 
         // lastStatus used to capture runningStatus
         byte lastStatus;
@@ -296,7 +296,7 @@ public:
                 case MIDI_NAMESPACE::MidiType::AfterTouchPoly:
                 case MIDI_NAMESPACE::MidiType::ControlChange:
                 case MIDI_NAMESPACE::MidiType::PitchBend:
-                    for (byte i = lPtr; i < rPtr; i = i + 2)
+                    for (auto i = lPtr; i < rPtr; i = i + 2)
                     {
                         mBleClass.add(lastStatus);
                         mBleClass.add(buffer[i + 1]);
@@ -305,7 +305,7 @@ public:
                     break;
                 case MIDI_NAMESPACE::MidiType::ProgramChange:
                 case MIDI_NAMESPACE::MidiType::AfterTouchChannel:
-                    for (byte i = lPtr; i < rPtr; i = i + 1)
+                    for (auto i = lPtr; i < rPtr; i = i + 1)
                     {
                         mBleClass.add(lastStatus);
                         mBleClass.add(buffer[i + 1]);
@@ -314,7 +314,7 @@ public:
                 case MIDI_NAMESPACE::MidiType::SystemExclusive:
 
                     mBleClass.add(buffer[lPtr]);
-                    for (byte i = lPtr; i < rPtr; i++)
+                    for (auto i = lPtr; i < rPtr; i++)
                         mBleClass.add(buffer[i + 1]);
 
                     break;
