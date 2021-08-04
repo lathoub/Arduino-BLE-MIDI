@@ -104,21 +104,7 @@ void receive(byte* buffer, size_t length)
                 transmitMIDIonDIN(buffer[lPtr], 0, 0);
                 for (auto i = lPtr; i < rPtr; i++)
                     transmitMIDIonDIN(buffer[i + 1], 0, 0);
-/*
-                if (++rPtr >= length)
-                    return; // end of packet
 
-                timestampByte = buffer[rPtr++];
-                if (timestampByte >= 80)
-                {
-                    auto timestampLow = 0x7f & timestampByte;
-                    timestamp = timestampLow + (timestampHigh << 7);
-
-                    std::cout << "timestamp low: 0x" << std::hex << (int)timestampByte << std::endl;
-                }
-
-                std::cout << "end of SysEx: 0x" << std::hex << (int)buffer[rPtr] << std::endl;
-*/
                 break;
 
             default:
@@ -148,7 +134,23 @@ void receive(byte* buffer, size_t length)
 
 int main()
 {
-    std::cout << std::endl << "SysEx " << std::endl;
+    std::cout << std::endl << "SysEx with RealTime msg in the middle --------" << std::endl;
+
+    byte msg[] = { 0xB0, 0xF4,  // header + timestamp
+                   0xF0,        // start SysEx
+                         0x01, 0x02, 0x03, 0x04, // SysEx data
+
+                   0xF3, // timestampLow
+                   0xFA, // Realtime msg: Start
+
+                         0x05, 0x06, 0x07, 0x08, // sysex data
+                   0xF4, // timestampLow
+                   0xF7 }; // end of SysEx
+
+    receive(msg, sizeof(msg));
+
+                                  /*
+    std::cout << std::endl << "SysEx ---------" << std::endl;
 
     byte sysExPart[] = { 0xB0, 0xF4,  // header + timestamp
                           0xF0, // start SysEx
@@ -173,8 +175,6 @@ int main()
                           0xF7 }; // end of SysEx
     receive(sysExPart2, sizeof(sysExPart2));
     
-
-
     std::cout << "ble Packet with 1 MIDI messages" << std::endl;
 
     byte blePacketWithOneMIDIMessage[] = { 0xA8, 0xC0, 
@@ -201,7 +201,7 @@ int main()
                                            0xC3,
                                            0x91, 0x3E, 0x3E };
     receive(blePacketWithThreeMIDIMessage, sizeof(blePacketWithThreeMIDIMessage));
-
+*/
 
 
 

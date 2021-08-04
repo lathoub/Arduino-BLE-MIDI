@@ -10,7 +10,7 @@
 #include "BLEMIDI_Defs.h"
 #include "BLEMIDI_Namespace.h"
 
-#define CHECK_BIT(var, pos) (!!((var) & (1 << (pos))))
+// #define CHECK_BIT(var, pos) (!!((var) & (1 << (pos))))
 
 BEGIN_BLEMIDI_NAMESPACE
 
