@@ -9,6 +9,8 @@ typedef unsigned char byte;
 
 #define CHECK_BIT(var,pos) (!!((var) & (1<<(pos))))
 
+//#define RUNNINGSTATUS_ENABLE
+
 void transmitMIDIonDIN(byte status, byte data1, byte data2)
 {
     std::cout << "0x" << std::hex << (int)status;
@@ -75,57 +77,70 @@ void receive(byte* buffer, size_t length)
             rPtr++;
 
 		if(!runningStatusContinuation){
-			// look at l and r pointers and decode by size.
-			if (rPtr - lPtr < 1) {
-				// Time code or system or "2 bytes" running Message
-				transmitMIDIonDIN(buffer[lPtr], 0, 0);
-			}
-			else if (rPtr - lPtr < 2) {
-				transmitMIDIonDIN(buffer[lPtr], buffer[lPtr + 1], 0);
-			}
-			else if (rPtr - lPtr < 3) {
-				transmitMIDIonDIN(buffer[lPtr], buffer[lPtr + 1], buffer[lPtr + 2]);
-			}
-			else {
-				// Too much data
-				// If not System Common or System Real-Time, send it as running status
+			// If not System Common or System Real-Time, send it as running status
 
-				auto midiType = lastStatus & 0xF0;
-				if (sysExContinuation)
-					midiType = 0xF0;
+			auto midiType = lastStatus & 0xF0;
+			if (sysExContinuation)
+				midiType = 0xF0;
 
-				switch (midiType)
+			switch (midiType)
+			{
+			
+			// 3 bytes
+			case 0x80:
+			case 0x90:
+			case 0xA0:
+			case 0xB0:
+			case 0xE0:
+#ifndef RUNNINGSTATUS_ENABLE
+				for (auto i = lPtr; i < rPtr; i = i + 2)
 				{
-				case 0x80:
-				case 0x90:
-				case 0xA0:
-				case 0xB0:
-				case 0xE0:
-					for (auto i = lPtr; i < rPtr; i = i + 2)
-					{
-						transmitMIDIonDIN(lastStatus, buffer[i + 1], buffer[i + 2]);
-					}
-					break;
-				case 0xC0:
-				case 0xD0:
-					for (auto i = lPtr; i < rPtr; i = i + 1)
-					{
-						transmitMIDIonDIN(lastStatus, buffer[i + 1], 0);
-					}
-					break;
-				case 0xF0:
-					transmitMIDIonDIN(buffer[lPtr], 0, 0);
-					for (auto i = lPtr; i < rPtr; i++)
-						transmitMIDIonDIN(buffer[i + 1], 0, 0);
 
-					break;
-
-				default:
-					break;
+					transmitMIDIonDIN(lastStatus, buffer[i + 1], buffer[i + 2]);
 				}
+#else
+				transmitMIDIonDIN(lastStatus, 0, 0);
+				for (auto i = lPtr; i < rPtr; i = i + 2)
+				{
+
+					transmitMIDIonDIN(buffer[i + 1], buffer[i + 2], 0);
+				}
+#endif
+				break;
+				
+			// 2 bytes
+			case 0xC0:
+			case 0xD0:
+#ifndef RUNNINGSTATUS_ENABLE
+				for (auto i = lPtr; i < rPtr; i = i + 1)
+				{
+					transmitMIDIonDIN(lastStatus, buffer[i + 1], 0);
+				}
+#else
+				transmitMIDIonDIN(lastStatus, 0, 0);
+				for (auto i = lPtr; i < rPtr; i = i + 1)
+				{
+
+					transmitMIDIonDIN(buffer[i + 1], 0 , 0);
+				}
+#endif
+				break;
+			// 1 byte or n bytes
+			case 0xF0:
+				transmitMIDIonDIN(buffer[lPtr], 0, 0);
+				for (auto i = lPtr; i < rPtr; i++)
+					transmitMIDIonDIN(buffer[i + 1], 0, 0);
+
+				break;
+
+			default:
+				break;
 			}
-		}else
+		}
+		else
 		{
+			
+#ifndef RUNNINGSTATUS_ENABLE
 			auto midiType = lastStatus & 0xF0;
             if (sysExContinuation)
                 midiType = 0xF0;
@@ -155,6 +170,14 @@ void receive(byte* buffer, size_t length)
             default:
                 break;
             }
+#else					
+			transmitMIDIonDIN(lastStatus, 0, 0);
+			
+			for (auto i = lPtr; i <= rPtr; i++)
+            {
+                transmitMIDIonDIN(buffer[i], 0, 0);
+            }
+#endif			
 			runningStatusContinuation = false;
 		}
 
