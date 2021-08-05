@@ -78,7 +78,7 @@ static uint32_t userOnPassKeyRequest()
     return passkey;
 };
 
-    /*
+/*
 ###### BLE COMMUNICATION PARAMS ######
 */
     /** Set connection parameters: 
@@ -162,7 +162,7 @@ protected:
                 {
                     /** Ready to connect now */
                     doConnect = true;
-                    /** Save the device reference in a public variable the client can use*/
+                    /** Save the device reference in a public variable that the client can use*/
                     advDevice = *advertisedDevice;
                     /** stop scan before connecting */
                     NimBLEDevice::getScan()->stop();
@@ -259,7 +259,9 @@ protected:
     void disconnected()
     {
         if (_bleMidiTransport->_disconnectedCallback)
+        {
             _bleMidiTransport->_disconnectedCallback();
+        }
     }
 
     void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify);
@@ -419,7 +421,7 @@ void BLEMIDI_Client_ESP32::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacter
 {
     if (this->_characteristic == pRemoteCharacteristic) //Redundant protection
     {
-        if (uxQueueSpacesAvailable(mRxQueue) >= length) //Don't overflow the queue. If the queue is overflowed, comunication breaks out
+        //if (uxQueueSpacesAvailable(mRxQueue) >= length) //Don't overflow the queue.
             receive(pData, length);
     }
 }
@@ -461,26 +463,23 @@ bool BLEMIDI_Client_ESP32::connect()
             {
                 if (_characteristic->canNotify())
                 {
-                    if (!_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
+                    if (_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
                     {
-                        Serial.println("Error - Not subscribe");
-                        /** Disconnect if subscribe failed */
-                        _client->disconnect();
-                        return false;
-                    }
-                    else
-                    {
+                        //Re-connection SUCCESS
                         return true;
                     }
-                }
+                }   
+                /** Disconnect if subscribe failed */
+                _client->disconnect();
             }
-            else
-            {
-                Serial.println("Error. Reconnect failed");
-                _client = nullptr;
-                return false;
-            }
+            /* If any connection problem exits, delete previous client and try again in the next attemp as new client*/
+            NimBLEDevice::deleteClient(_client);
+            _client = nullptr;
+            return false; 
         }
+        /*If client does not match, delete previous client and create a new one*/
+        NimBLEDevice::deleteClient(_client);
+        _client = nullptr;
     }
 
     if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS)
@@ -488,12 +487,14 @@ bool BLEMIDI_Client_ESP32::connect()
         Serial.println("Max clients reached - no more connections available");
         return false;
     }
-
+    
+    // Create and setup a new client
     _client = BLEDevice::createClient();
 
     _client->setClientCallbacks(new MyClientCallbacks(this), false);
 
-    _client->setConnectionParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL + 10, BLEMIDI_CLIENT_COMM_LATENCY + 1, BLEMIDI_CLIENT_COMM_TIMEOUT + 10);
+    _client->setConnectionParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL, BLEMIDI_CLIENT_COMM_LATENCY, BLEMIDI_CLIENT_COMM_TIMEOUT);
+    
     /** Set how long we are willing to wait for the connection to complete (seconds), default is 30. */
     _client->setConnectTimeout(15);
 
@@ -502,14 +503,15 @@ bool BLEMIDI_Client_ESP32::connect()
         /** Created a client but failed to connect, don't need to keep it as it has no data */
         NimBLEDevice::deleteClient(_client);
         _client = nullptr;
-        Serial.println("Failed to connect, deleted client");
+        //Serial.println("Failed to connect, deleted client");
         return false;
     }
 
     if (!_client->isConnected())
     {
-        Serial.println("Failed to connect");
+        //Serial.println("Failed to connect");
         _client->disconnect();
+        NimBLEDevice::deleteClient(_client);
         _client = nullptr;
         return false;
     }
@@ -519,44 +521,35 @@ bool BLEMIDI_Client_ESP32::connect()
     Serial.print(" / ");
     Serial.println(_client->getPeerAddress().toString().c_str());
 
+    /*
     Serial.print("RSSI: ");
     Serial.println(_client->getRssi());
-
+    */
+    
     /** Now we can read/write/subscribe the charateristics of the services we are interested in */
     pSvc = _client->getService(SERVICE_UUID);
-    if (pSvc)
-    { /** make sure it's not null */
+    if (pSvc) /** make sure it's not null */
+    { 
         _characteristic = pSvc->getCharacteristic(CHARACTERISTIC_UUID);
-
-        if (_characteristic)
-        { /** make sure it's not null */
+        
+        if (_characteristic) /** make sure it's not null */
+        { 
             if (_characteristic->canNotify())
             {
-                if (!_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
+                if (_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
                 {
-                    Serial.println("Error - Subcribe error");
-                    /** Disconnect if subscribe failed */
-                    _client->disconnect();
-                    return false;
+                    //Connection SUCCESS
+                    return true;
                 }
             }
-            else
-            {
-                return false;
-            }
-        }
-        else
-        {
-            return false;
         }
     }
-    else
-    {
-        Serial.println("Error. MIDI service not found.");
-        return false;
-    }
-
-    return true;
+    
+    //If anything fails, disconnect and delete client
+    _client->disconnect();
+    NimBLEDevice::deleteClient(_client);
+    _client = nullptr;
+    return false;
 };
 
 /** Callback to process the results of the last scan or restart it */
