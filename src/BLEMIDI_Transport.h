@@ -122,7 +122,6 @@ protected:
      The header byte contains the topmost 6 bits of timing information for MIDI events in the BLE
      packet. The remaining 7 bits of timing information for individual MIDI messages encoded in a
      packet is expressed by timestamp bytes.
-
      Timestamp Byte
      bit 7       Set to 1.
      bits 6-0    timestampLow: Least Significant 7 bits of timestamp information.
