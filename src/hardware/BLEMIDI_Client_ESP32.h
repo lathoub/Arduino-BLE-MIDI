@@ -94,10 +94,10 @@ static uint32_t userOnPassKeyRequest()
          *  0 latency (Number of intervals allowed to skip),
          *  TimeOut (unit: 10ms) 51 * 10ms = 510ms. Timeout should be minimum 100ms.
          */
-#define BLEMIDI_CLIENT_COMM_MIN_INTERVAL 6  // 7.5ms
-#define BLEMIDI_CLIENT_COMM_MAX_INTERVAL 35 // 40ms
+#define BLEMIDI_CLIENT_COMM_MIN_INTERVAL 6      // 7.5ms
+#define BLEMIDI_CLIENT_COMM_MAX_INTERVAL 35     // 40ms
 #define BLEMIDI_CLIENT_COMM_LATENCY 0
-#define BLEMIDI_CLIENT_COMM_TIMEOUT 400 //4000ms
+#define BLEMIDI_CLIENT_COMM_TIMEOUT 200         //2000ms
 
 /*
 #############################################
@@ -309,7 +309,7 @@ protected:
         }
 
         //Try reconnection or search a new one
-        NimBLEDevice::getScan()->start(3, scanEndedCB);
+        NimBLEDevice::getScan()->start(1, scanEndedCB);
     }
 
     bool onConnParamsUpdateRequest(NimBLEClient *pClient, const ble_gap_upd_params *params)
@@ -421,7 +421,6 @@ void BLEMIDI_Client_ESP32::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacter
 {
     if (this->_characteristic == pRemoteCharacteristic) //Redundant protection
     {
-        //if (uxQueueSpacesAvailable(mRxQueue) >= length) //Don't overflow the queue.
             receive(pData, length);
     }
 }
@@ -441,13 +440,12 @@ void BLEMIDI_Client_ESP32::scan()
         pBLEScan->setActiveScan(true);
 
         Serial.println("Scanning...");
-        pBLEScan->start(3, scanEndedCB);
+        pBLEScan->start(1, scanEndedCB);
     }
 };
 
 bool BLEMIDI_Client_ESP32::connect()
 {
-    Serial.println("Try Connection...");
     using namespace std::placeholders; //<- for bind funtion in callback notification
 
     /** Check if we have a client we should reuse first
