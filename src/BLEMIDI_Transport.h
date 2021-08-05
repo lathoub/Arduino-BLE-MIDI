@@ -47,6 +47,11 @@ public:
     {
         mBleClass.begin(mDeviceName, this);
     }
+    
+    void end()
+    {
+        mBleClass.end();
+    }
 
     bool beginTransmission(MIDI_NAMESPACE::MidiType type)
     {
@@ -93,11 +98,6 @@ public:
     byte read()
     {
         return mRxBuffer[--mRxIndex];
-    }
-
-    bool end()
-    {
-        return mBleClass.end();
     }
 
     unsigned available()
@@ -165,8 +165,11 @@ protected:
         *timestamp = (currentTimeStamp & 0x7F) | 0x80;     // 7 bits plus MSB
     }
 
-    static void setMidiTimestamp(uint8_t header, uint8_t *timestamp)
+    static uint16_t setMidiTimestamp(uint8_t header, uint8_t timestamp)
     {
+        auto timestampHigh = 0x3f & header;
+        auto timestampLow = 0x7f & timestamp;
+        return (timestampLow + (timestampHigh << 7));
     }
 
 public:
@@ -215,6 +218,14 @@ public:
     MIDI messages. In the MIDI BLE protocol, the System Real-Time messages must be deinterleaved
     from other messages – except for System Exclusive messages.
     */
+
+  /**
+   * If #define RUNNING_ENABLE is commented, it will transform all incoming runningStatus messages in full midi messages.
+   * Else, it will put in the buffer the same info that it had received (runningStatus will be not transformated).
+   * It recommend not use runningStatus by default. Only use if parser accepts runningStatus and your application has a so high transmission rate.
+   */ 
+  //#define RUNNING_ENABLE
+
     void receive(byte *buffer, size_t length)
     {
         // Pointers used to search through payload.
@@ -236,12 +247,12 @@ public:
         bool sysExContinuation = false;
         bool runningStatusContinuation = false;
 
-        if (timestampByte >= 80)
+        if (timestampByte >= 80) // if bit 7 is 1, it's a timestampByte
         {
             auto timestampLow = 0x7f & timestampByte;
             timestamp = timestampLow + (timestampHigh << 7);
         }
-        else
+        else // if bit 7 is 0, it's the Continuation of a previous SysEx
         {
             sysExContinuation = true;
             lPtr--; // the second byte is part of the SysEx
@@ -270,68 +281,58 @@ public:
 
             if (!runningStatusContinuation)
             {
-                // look at l and r pointers and decode by size.
-                if (rPtr - lPtr < 1)
-                {
-                    // Time code or system
-                    mBleClass.add(buffer[lPtr]);
-                }
-                else if (rPtr - lPtr < 2)
-                {
-                    mBleClass.add(buffer[lPtr]);
-                    mBleClass.add(buffer[lPtr + 1]);
-                }
-                else if (rPtr - lPtr < 3)
-                {
-                    mBleClass.add(buffer[lPtr]);
-                    mBleClass.add(buffer[lPtr + 1]);
-                    mBleClass.add(buffer[lPtr + 2]);
-                }
-                else
-                {
-                    // Too much data
-                    // If not System Common or System Real-Time, send it as running status
+                // If not System Common or System Real-Time, send it as running status
 
-                    auto midiType = lastStatus & 0xF0;
-                    if (sysExContinuation)
-                        midiType = 0xF0;
+                auto midiType = lastStatus & 0xF0;
+                if (sysExContinuation)
+                    midiType = 0xF0;
 
-                    switch (midiType)
+                switch (midiType)
+                {
+                case 0x80:
+                case 0x90:
+                case 0xA0:
+                case 0xB0:
+                case 0xE0:
+#ifdef RUNNING_ENABLE
+                    mBleClass.add(lastStatus);
+#endif
+                    for (auto i = lPtr; i < rPtr; i = i + 2)
                     {
-                    case 0x80:
-                    case 0x90:
-                    case 0xA0:
-                    case 0xB0:
-                    case 0xE0:
-                        for (auto i = lPtr; i < rPtr; i = i + 2)
-                        {
-                            mBleClass.add(lastStatus);
-                            mBleClass.add(buffer[i + 1]);
-                            mBleClass.add(buffer[i + 2]);
-                        }
-                        break;
-                    case 0xC0:
-                    case 0xD0:
-                        for (auto i = lPtr; i < rPtr; i = i + 1)
-                        {
-                            mBleClass.add(lastStatus);
-                            mBleClass.add(buffer[i + 1]);
-                        }
-                        break;
-                    case 0xF0:
+#ifndef RUNNING_ENABLE
                         mBleClass.add(lastStatus);
-                        for (auto i = lPtr; i < rPtr; i++)
-                            mBleClass.add(buffer[i + 1]);
-
-                        break;
-
-                    default:
-                        break;
+#endif
+                        mBleClass.add(buffer[i + 1]);
+                        mBleClass.add(buffer[i + 2]);
                     }
+                    break;
+                case 0xC0:
+                case 0xD0:
+#ifdef RUNNING_ENABLE
+                    mBleClass.add(lastStatus);
+#endif
+                    for (auto i = lPtr; i < rPtr; i = i + 1)
+                    {
+#ifndef RUNNING_ENABLE
+                        mBleClass.add(lastStatus);
+#endif
+                        mBleClass.add(buffer[i + 1]);
+                    }
+                    break;
+                case 0xF0:
+                    mBleClass.add(lastStatus);
+                    for (auto i = lPtr; i < rPtr; i++)
+                        mBleClass.add(buffer[i + 1]);
+
+                    break;
+
+                default:
+                    break;
                 }
             }
             else
             {
+#ifndef RUNNING_ENABLE
                 auto midiType = lastStatus & 0xF0;
                 if (sysExContinuation)
                     midiType = 0xF0;
@@ -364,6 +365,11 @@ public:
                 default:
                     break;
                 }
+#else
+                mBleClass.add(lastStatus);
+                for (auto i = lPtr; i <= rPtr; i++)
+                    mBleClass.add(buffer[i]);
+#endif
                 runningStatusContinuation = false;
             }
 
