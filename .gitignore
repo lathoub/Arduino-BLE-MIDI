@@ -3,3 +3,7 @@ examples/.DS_Store
 src/.DS_Store
 .vscode/settings.json
 .vscode/c_cpp_properties.json
+test/msvc/.vs
+test/msvc/x64
+test/msvc/ConsoleApplication2.vcxproj.user
+test/msvc/ConsoleApplication2.vcxproj.filters
