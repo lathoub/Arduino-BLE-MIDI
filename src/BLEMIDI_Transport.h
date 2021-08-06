@@ -338,9 +338,6 @@ public:
             {
 #ifndef RUNNING_ENABLE
                 auto midiType = lastStatus & 0xF0;
-                if (sysExContinuation)
-                    midiType = SystemExclusive;
-
                 switch (midiType)
                 {
                 case NoteOff:
