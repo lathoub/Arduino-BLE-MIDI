@@ -52,11 +52,6 @@ public:
     {
         mBleClass.end();
     }
-    
-    void end()
-    {
-        mBleClass.end();
-    }
 
     bool beginTransmission(MIDI_NAMESPACE::MidiType type)
     {
