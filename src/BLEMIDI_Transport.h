@@ -181,6 +181,11 @@ public:
     void (*_connectedCallback)() = nullptr;
     void (*_disconnectedCallback)() = nullptr;
 
+    void  setName(const char *deviceName) 
+    { 
+        strncpy(mDeviceName, deviceName, sizeof(mDeviceName));
+    };
+
 public:
     void setHandleConnected(void (*fptr)())
     {
@@ -228,7 +233,7 @@ public:
    * Else, it will put in the buffer the same info that it had received (runningStatus will be not transformated).
    * It recommend not use runningStatus by default. Only use if parser accepts runningStatus and your application has a so high transmission rate.
    */
-    //#define RUNNING_ENABLE
+    #define RUNNING_ENABLE
 
     void receive(byte *buffer, size_t length)
     {
