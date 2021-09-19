@@ -176,6 +176,11 @@ public:
     void (*_connectedCallback)() = nullptr;
     void (*_disconnectedCallback)() = nullptr;
 
+    void  setName(const char *deviceName) 
+    { 
+        strncpy(mDeviceName, deviceName, sizeof(mDeviceName));
+    };
+    
 public:
     void setHandleConnected(void (*fptr)())
     {
