@@ -38,6 +38,24 @@
 #endif //Not modify
 
 /*
+###### TX POWER #####
+*/
+/**
+ * Set power transmision
+ *
+ * ESP_PWR_LVL_N12                // Corresponding to -12dbm    Minimum
+ * ESP_PWR_LVL_N9                 // Corresponding to  -9dbm
+ * ESP_PWR_LVL_N6                 // Corresponding to  -6dbm
+ * ESP_PWR_LVL_N3                 // Corresponding to  -3dbm
+ * ESP_PWR_LVL_N0                 // Corresponding to   0dbm
+ * ESP_PWR_LVL_P3                 // Corresponding to  +3dbm
+ * ESP_PWR_LVL_P6                 // Corresponding to  +6dbm
+ * ESP_PWR_LVL_P9                 // Corresponding to  +9dbm    Maximum
+*/
+
+#define BLEMIDI_TX_PWR ESP_PWR_LVL_P9
+
+/*
 ###### SECURITY #####
 */
 
@@ -394,7 +412,7 @@ bool BLEMIDI_Client_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class
     NimBLEDevice::setSecurityAuth(BLEMIDI_CLIENT_SECURITY_AUTH);
 
     /** Optional: set the transmit power, default is 3db */
-    NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
+    NimBLEDevice::setPower(BLEMIDI_TX_PWR); /** +9db */
 
     myAdvCB.enableConnection = true;
     scan();
