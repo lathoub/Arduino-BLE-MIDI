@@ -112,10 +112,10 @@ static uint32_t userOnPassKeyRequest()
          *  0 latency (Number of intervals allowed to skip),
          *  TimeOut (unit: 10ms) 51 * 10ms = 510ms. Timeout should be minimum 100ms.
          */
-#define BLEMIDI_CLIENT_COMM_MIN_INTERVAL    6   // 7.5ms
-#define BLEMIDI_CLIENT_COMM_MAX_INTERVAL    35  // 40ms
-#define BLEMIDI_CLIENT_COMM_LATENCY         0   //
-#define BLEMIDI_CLIENT_COMM_TIMEOUT         200 //2000ms
+#define BLEMIDI_CLIENT_COMM_MIN_INTERVAL 6  // 7.5ms
+#define BLEMIDI_CLIENT_COMM_MAX_INTERVAL 35 // 40ms
+#define BLEMIDI_CLIENT_COMM_LATENCY 0       //
+#define BLEMIDI_CLIENT_COMM_TIMEOUT 200     //2000ms
 
 /*
 #############################################
@@ -322,7 +322,7 @@ protected:
     void onConnect(BLEClient *pClient)
     {
         //Serial.println("##Connected##");
-        pClient->updateConnParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL, BLEMIDI_CLIENT_COMM_LATENCY, BLEMIDI_CLIENT_COMM_TIMEOUT);
+        //pClient->updateConnParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL, BLEMIDI_CLIENT_COMM_LATENCY, BLEMIDI_CLIENT_COMM_TIMEOUT);
         vTaskDelay(1);
         if (_bluetoothEsp32)
         {
@@ -358,10 +358,11 @@ protected:
         { /** Number of intervals allowed to skip */
             return false;
         }
-        else if (params->supervision_timeout > BLEMIDI_CLIENT_COMM_TIMEOUT + 10)
+        else if (params->supervision_timeout > BLEMIDI_CLIENT_COMM_TIMEOUT)
         { /** 10ms units */
             return false;
         }
+        pClient->updateConnParams(params->itvl_min, params->itvl_max, params->latency, params->supervision_timeout);
 
         return true;
     };
