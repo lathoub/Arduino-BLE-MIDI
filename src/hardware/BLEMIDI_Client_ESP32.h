@@ -58,7 +58,7 @@
      *  Uncomment what you need
      *  These are the default values.
      */
-//#define BLEMIDI_CLIENT_BOND
+#define BLEMIDI_CLIENT_BOND
 //#define BLEMIDI_CLIENT_MITM
 #define BLEMIDI_CLIENT_PAIR
 
@@ -78,7 +78,7 @@ static uint32_t userOnPassKeyRequest()
     return passkey;
 };
 
-/*
+    /*
 ###### BLE COMMUNICATION PARAMS ######
 */
     /** Set connection parameters: 
@@ -94,10 +94,10 @@ static uint32_t userOnPassKeyRequest()
          *  0 latency (Number of intervals allowed to skip),
          *  TimeOut (unit: 10ms) 51 * 10ms = 510ms. Timeout should be minimum 100ms.
          */
-#define BLEMIDI_CLIENT_COMM_MIN_INTERVAL 6      // 7.5ms
-#define BLEMIDI_CLIENT_COMM_MAX_INTERVAL 35     // 40ms
-#define BLEMIDI_CLIENT_COMM_LATENCY 0
-#define BLEMIDI_CLIENT_COMM_TIMEOUT 200         //2000ms
+#define BLEMIDI_CLIENT_COMM_MIN_INTERVAL    6   // 7.5ms
+#define BLEMIDI_CLIENT_COMM_MAX_INTERVAL    35  // 40ms
+#define BLEMIDI_CLIENT_COMM_LATENCY         0   //
+#define BLEMIDI_CLIENT_COMM_TIMEOUT         200 //2000ms
 
 /*
 #############################################
@@ -191,6 +191,7 @@ private:
     BLEAdvertising *_advertising = nullptr;
     BLERemoteCharacteristic *_characteristic = nullptr;
     BLERemoteService *pSvc = nullptr;
+    bool firstTimeSend = true; //First writeValue get sends like Write with reponse for clean security flags. After first time, all messages are send like WriteNoResponse for increase transmision speed.
 
     BLEMIDI_Transport<class BLEMIDI_Client_ESP32> *_bleMidiTransport = nullptr;
 
@@ -228,7 +229,18 @@ public:
             return;
         if (_characteristic == NULL)
             return;
-        _characteristic->writeValue(data, length, true);
+
+        if (firstTimeSend)
+        {
+            _characteristic->writeValue(data, length, true);
+            firstTimeSend = false;
+            return;
+        }
+
+        if (!_characteristic->writeValue(data, length, !_characteristic->canWriteNoResponse()))
+            firstTimeSend = true;
+
+        return;
     }
 
     bool available(byte *pvBuffer);
@@ -236,7 +248,7 @@ public:
     void add(byte value)
     {
         // called from BLE-MIDI, to add it to a buffer here
-        xQueueSend(mRxQueue, &value, portMAX_DELAY/2);
+        xQueueSend(mRxQueue, &value, portMAX_DELAY / 2);
     }
 
 protected:
@@ -254,6 +266,7 @@ protected:
         {
             _bleMidiTransport->_connectedCallback();
         }
+        firstTimeSend = true;
     }
 
     void disconnected()
@@ -262,6 +275,7 @@ protected:
         {
             _bleMidiTransport->_disconnectedCallback();
         }
+        firstTimeSend = true;
     }
 
     void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify);
@@ -421,7 +435,7 @@ void BLEMIDI_Client_ESP32::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacter
 {
     if (this->_characteristic == pRemoteCharacteristic) //Redundant protection
     {
-            receive(pData, length);
+        receive(pData, length);
     }
 }
 
@@ -466,14 +480,14 @@ bool BLEMIDI_Client_ESP32::connect()
                         //Re-connection SUCCESS
                         return true;
                     }
-                }   
+                }
                 /** Disconnect if subscribe failed */
                 _client->disconnect();
             }
             /* If any connection problem exits, delete previous client and try again in the next attemp as new client*/
             NimBLEDevice::deleteClient(_client);
             _client = nullptr;
-            return false; 
+            return false;
         }
         /*If client does not match, delete previous client and create a new one*/
         NimBLEDevice::deleteClient(_client);
@@ -485,14 +499,14 @@ bool BLEMIDI_Client_ESP32::connect()
         Serial.println("Max clients reached - no more connections available");
         return false;
     }
-    
+
     // Create and setup a new client
     _client = BLEDevice::createClient();
 
     _client->setClientCallbacks(new MyClientCallbacks(this), false);
 
     _client->setConnectionParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL, BLEMIDI_CLIENT_COMM_LATENCY, BLEMIDI_CLIENT_COMM_TIMEOUT);
-    
+
     /** Set how long we are willing to wait for the connection to complete (seconds), default is 30. */
     _client->setConnectTimeout(15);
 
@@ -523,15 +537,15 @@ bool BLEMIDI_Client_ESP32::connect()
     Serial.print("RSSI: ");
     Serial.println(_client->getRssi());
     */
-    
+
     /** Now we can read/write/subscribe the charateristics of the services we are interested in */
     pSvc = _client->getService(SERVICE_UUID);
     if (pSvc) /** make sure it's not null */
-    { 
+    {
         _characteristic = pSvc->getCharacteristic(CHARACTERISTIC_UUID);
-        
+
         if (_characteristic) /** make sure it's not null */
-        { 
+        {
             if (_characteristic->canNotify())
             {
                 if (_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
@@ -542,7 +556,7 @@ bool BLEMIDI_Client_ESP32::connect()
             }
         }
     }
-    
+
     //If anything fails, disconnect and delete client
     _client->disconnect();
     NimBLEDevice::deleteClient(_client);
