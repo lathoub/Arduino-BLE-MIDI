@@ -170,6 +170,7 @@ protected:
 	{
 		if (_bleMidiTransport->_disconnectedCallback)
 			_bleMidiTransport->_disconnectedCallback();
+
         _central = nullptr;
 	}
 
