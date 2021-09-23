@@ -229,7 +229,7 @@ public:
     */
 
     /**
-   * If #define RUNNING_ENABLE is commented, it will transform all incoming runningStatus messages in full midi messages.
+   * If #define RUNNING_ENABLE is commented/disabled, it will transform all incoming runningStatus messages in full midi messages.
    * Else, it will put in the buffer the same info that it had received (runningStatus will be not transformated).
    * It recommend not use runningStatus by default. Only use if parser accepts runningStatus and your application has a so high transmission rate.
    */
