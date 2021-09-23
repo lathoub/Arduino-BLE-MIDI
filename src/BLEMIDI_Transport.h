@@ -180,23 +180,26 @@ public:
     void (*_connectedCallback)() = nullptr;
     void (*_disconnectedCallback)() = nullptr;
 
-    void  setName(const char *deviceName) 
-    { 
+    BLEMIDI_Transport &setName(const char *deviceName)
+    {
         strncpy(mDeviceName, deviceName, sizeof(mDeviceName));
+        return *this;
     };
 
 public:
-    void setHandleConnected(void (*fptr)())
+    BLEMIDI_Transport &setHandleConnected(void (*fptr)())
     {
         _connectedCallback = fptr;
+        return *this;
     }
 
-    void setHandleDisconnected(void (*fptr)())
+    BLEMIDI_Transport &setHandleDisconnected(void (*fptr)())
     {
         _disconnectedCallback = fptr;
+        return *this;
     }
 
-    /*
+/*
     The general form of a MIDI message follows:
     n-byte MIDI Message
     Byte 0            MIDI message Status byte, Bit 7 is Set to 1.
@@ -227,12 +230,12 @@ public:
     from other messages – except for System Exclusive messages.
     */
 
-    /**
+/**
    * If #define RUNNING_ENABLE is commented/disabled, it will transform all incoming runningStatus messages in full midi messages.
    * Else, it will put in the buffer the same info that it had received (runningStatus will be not transformated).
    * It recommend not use runningStatus by default. Only use if parser accepts runningStatus and your application has a so high transmission rate.
    */
-    #define RUNNING_ENABLE
+#define RUNNING_ENABLE
 
     void receive(byte *buffer, size_t length)
     {
