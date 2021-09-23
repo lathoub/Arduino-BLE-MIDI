@@ -12,6 +12,10 @@
 
 BEGIN_BLEMIDI_NAMESPACE
 
+using namespace MIDI_NAMESPACE;
+
+#define MIDI_TYPE 0x80
+
 template <class T, class _Settings = DefaultSettings>
 class BLEMIDI_Transport
 {
@@ -46,7 +50,7 @@ public:
     void begin()
     {
         mBleClass.begin(mDeviceName, this);
-    }	
+    }
 
     void end()
     {
@@ -75,7 +79,7 @@ public:
 
     void endTransmission()
     {
-        if (mTxBuffer[mTxIndex - 1] == 0xF7)
+        if (mTxBuffer[mTxIndex - 1] == SystemExclusiveEnd)
         {
             if (mTxIndex >= sizeof(mTxBuffer))
             {
@@ -88,7 +92,7 @@ public:
             {
                 mTxBuffer[mTxIndex - 1] = mTimestampLow; // or generate new ?
             }
-            mTxBuffer[mTxIndex++] = 0xF7;
+            mTxBuffer[mTxIndex++] = SystemExclusiveEnd;
         }
 
         mBleClass.write(mTxBuffer, mTxIndex);
@@ -180,7 +184,7 @@ public:
     { 
         strncpy(mDeviceName, deviceName, sizeof(mDeviceName));
     };
-    
+
 public:
     void setHandleConnected(void (*fptr)())
     {
@@ -223,12 +227,12 @@ public:
     from other messages – except for System Exclusive messages.
     */
 
-  /**
-   * If #define RUNNING_ENABLE is commented, it will transform all incoming runningStatus messages in full midi messages.
+    /**
+   * If #define RUNNING_ENABLE is commented/disabled, it will transform all incoming runningStatus messages in full midi messages.
    * Else, it will put in the buffer the same info that it had received (runningStatus will be not transformated).
    * It recommend not use runningStatus by default. Only use if parser accepts runningStatus and your application has a so high transmission rate.
-   */ 
-  //#define RUNNING_ENABLE
+   */
+    #define RUNNING_ENABLE
 
     void receive(byte *buffer, size_t length)
     {
@@ -239,7 +243,7 @@ public:
         // lastStatus used to capture runningStatus
         byte lastStatus;
         // previousStatus used to continue a runningStatus interrupted by a timeStamp or a System Message.
-        byte previousStatus = 0x00;
+        byte previousStatus = InvalidType;
 
         byte headerByte = buffer[lPtr++];
 
@@ -251,10 +255,10 @@ public:
         bool sysExContinuation = false;
         bool runningStatusContinuation = false;
 
-        if (timestampByte >= 80) // if bit 7 is 1, it's a timestampByte
+        if (timestampByte >= MIDI_TYPE) // if bit 7 is 1, it's a timestampByte
         {
-            auto timestampLow = 0x7f & timestampByte;
-            timestamp = timestampLow + (timestampHigh << 7);
+            timestamp = setMidiTimestamp(headerByte, timestampByte);
+            // what do to with the timestamp?
         }
         else // if bit 7 is 0, it's the Continuation of a previous SysEx
         {
@@ -267,12 +271,12 @@ public:
         {
             lastStatus = buffer[lPtr];
 
-            if (previousStatus == 0x00)
+            if (previousStatus == InvalidType)
             {
-                if ((lastStatus < 0x80) && !sysExContinuation)
+                if ((lastStatus < MIDI_TYPE) && !sysExContinuation)
                     return; // Status message not present and it is not a runningStatus continuation, bail
             }
-            else if (lastStatus < 0x80)
+            else if (lastStatus < MIDI_TYPE)
             {
                 lastStatus = previousStatus;
                 runningStatusContinuation = true;
@@ -280,7 +284,7 @@ public:
 
             // Point to next non-data byte
             rPtr = lPtr;
-            while ((buffer[rPtr + 1] < 0x80) && (rPtr < (length - 1)))
+            while ((buffer[rPtr + 1] < MIDI_TYPE) && (rPtr < (length - 1)))
                 rPtr++;
 
             if (!runningStatusContinuation)
@@ -289,15 +293,15 @@ public:
 
                 auto midiType = lastStatus & 0xF0;
                 if (sysExContinuation)
-                    midiType = 0xF0;
+                    midiType = SystemExclusive;
 
                 switch (midiType)
                 {
-                case 0x80:
-                case 0x90:
-                case 0xA0:
-                case 0xB0:
-                case 0xE0:
+                case NoteOff:
+                case NoteOn:
+                case AfterTouchPoly:
+                case ControlChange:
+                case PitchBend:
 #ifdef RUNNING_ENABLE
                     mBleClass.add(lastStatus);
 #endif
@@ -310,8 +314,8 @@ public:
                         mBleClass.add(buffer[i + 2]);
                     }
                     break;
-                case 0xC0:
-                case 0xD0:
+                case ProgramChange:
+                case AfterTouchChannel:
 #ifdef RUNNING_ENABLE
                     mBleClass.add(lastStatus);
 #endif
@@ -323,7 +327,7 @@ public:
                         mBleClass.add(buffer[i + 1]);
                     }
                     break;
-                case 0xF0:
+                case SystemExclusive:
                     mBleClass.add(lastStatus);
                     for (auto i = lPtr; i < rPtr; i++)
                         mBleClass.add(buffer[i + 1]);
@@ -338,16 +342,13 @@ public:
             {
 #ifndef RUNNING_ENABLE
                 auto midiType = lastStatus & 0xF0;
-                if (sysExContinuation)
-                    midiType = 0xF0;
-
                 switch (midiType)
                 {
-                case 0x80:
-                case 0x90:
-                case 0xA0:
-                case 0xB0:
-                case 0xE0:
+                case NoteOff:
+                case NoteOn:
+                case AfterTouchPoly:
+                case ControlChange:
+                case PitchBend:
                     //3 bytes full Midi -> 2 bytes runningStatus
                     for (auto i = lPtr; i <= rPtr; i = i + 2)
                     {
@@ -356,8 +357,8 @@ public:
                         mBleClass.add(buffer[i + 1]);
                     }
                     break;
-                case 0xC0:
-                case 0xD0:
+                case ProgramChange:
+                case AfterTouchChannel:
                     //2 bytes full Midi -> 1 byte runningStatus
                     for (auto i = lPtr; i <= rPtr; i = i + 1)
                     {
@@ -380,16 +381,16 @@ public:
             if (++rPtr >= length)
                 return; // end of packet
 
-            if (lastStatus < 0xf0) //exclude System Message. They must not be RunningStatus
+            if (lastStatus < SystemExclusive) //exclude System Message. They must not be RunningStatus
             {
                 previousStatus = lastStatus;
             }
 
             timestampByte = buffer[rPtr++];
-            if (timestampByte >= 80) // is bit 7 set?
+            if (timestampByte >= MIDI_TYPE) // is bit 7 set?
             {
-                auto timestampLow = 0x7f & timestampByte;
-                timestamp = timestampLow + (timestampHigh << 7);
+                timestamp = setMidiTimestamp(headerByte, timestampByte);
+                // what do to with the timestamp?
             }
 
             // Point to next status
