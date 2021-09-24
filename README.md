@@ -11,7 +11,7 @@ When installing this library from the Arduino IDE, the dependency be downloaded 
 When manually installing this library, you have to manually download [Arduino MIDI Library](https://github.com/FortySevenEffects/arduino_midi_library) from github and install it in the same directory as this library - without this additional install, this library will not be able to compile.
 
 When using `ESP32` consider using NimBLE (`NimBLE-Arduino`).
-When using the `Arduino NANO 33 BLE`, you have to install `ArduinoBLE`
+When using the `Arduino NANO 33 BLE` or `Arduino NANO RP2040 Connect`, you must install `ArduinoBLE`
 
 ## Usage
 ### Basic / Default
