@@ -75,6 +75,7 @@
      * 
      *  Uncomment what you need
      *  These are the default values.
+     *  You can select some simultaneously.
      */
 #define BLEMIDI_CLIENT_BOND
 //#define BLEMIDI_CLIENT_MITM
@@ -86,7 +87,7 @@
  */
 static uint32_t userOnPassKeyRequest()
 {
-    //FILL WITH YOUR CUSTOM AUTH METHOD or PASSKEY
+    //FILL WITH YOUR CUSTOM AUTH METHOD CODE or PASSKEY
     //FOR EXAMPLE:
     uint32_t passkey = 123456;
 
@@ -96,7 +97,7 @@ static uint32_t userOnPassKeyRequest()
     return passkey;
 };
 
-/*
+    /*
 ###### BLE COMMUNICATION PARAMS ######
 */
     /** Set connection parameters: 
@@ -128,7 +129,7 @@ static uint32_t userOnPassKeyRequest()
  * Uncomment this define if your device doesn't work propertily after a reconnection.
  * 
 */
-#define BLEMIDI_FORCE_NEW_CONNECTION
+//#define BLEMIDI_FORCE_NEW_CONNECTION
 
 /**
  * 
@@ -355,12 +356,16 @@ protected:
         if (_bluetoothEsp32)
         {
             _bluetoothEsp32->disconnected();
+#ifdef BLEMIDI_FORCE_NEW_CONNECTION
+            // Try reconnection or search a new one
+            _bluetoothEsp32->scan();
+#endif // BLEMIDI_FORCE_NEW_CONNECTION
         }
 
 #ifdef BLEMIDI_FORCE_NEW_CONNECTION
         // Renew Client
         NimBLEDevice::deleteClient(pClient);
-        //NimBLEDevice::createClient();
+        NimBLEDevice::createClient();
         pClient = nullptr;
 #endif // BLEMIDI_FORCE_NEW_CONNECTION
 
