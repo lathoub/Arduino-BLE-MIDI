@@ -75,6 +75,7 @@
      * 
      *  Uncomment what you need
      *  These are the default values.
+     *  You can select some simultaneously.
      */
 #define BLEMIDI_CLIENT_BOND
 //#define BLEMIDI_CLIENT_MITM
@@ -86,7 +87,7 @@
  */
 static uint32_t userOnPassKeyRequest()
 {
-    //FILL WITH YOUR CUSTOM AUTH METHOD or PASSKEY
+    //FILL WITH YOUR CUSTOM AUTH METHOD CODE or PASSKEY
     //FOR EXAMPLE:
     uint32_t passkey = 123456;
 
@@ -116,6 +117,23 @@ static uint32_t userOnPassKeyRequest()
 #define BLEMIDI_CLIENT_COMM_MAX_INTERVAL 35 // 40ms
 #define BLEMIDI_CLIENT_COMM_LATENCY 0       //
 #define BLEMIDI_CLIENT_COMM_TIMEOUT 200     //2000ms
+
+/*
+###### BLE FORCE NEW CONNECTION ######
+*/
+
+/** 
+ * This parameter force to skip the "soft-reconnection" and force to create a new connection after a disconnect event.
+ * "Soft-reconnection" save some time and energy in comparation with performming a new connection, but some BLE devices 
+ * don't support or don't perform correctly a "soft-reconnection" after a disconnection event.
+ * Uncomment this define if your device doesn't work propertily after a reconnection.
+ * 
+*/
+//#define BLEMIDI_FORCE_NEW_CONNECTION
+
+/**
+ * 
+*/
 
 /*
 #############################################
@@ -338,7 +356,18 @@ protected:
         if (_bluetoothEsp32)
         {
             _bluetoothEsp32->disconnected();
+#ifdef BLEMIDI_FORCE_NEW_CONNECTION
+            // Try reconnection or search a new one
+            _bluetoothEsp32->scan();
+#endif // BLEMIDI_FORCE_NEW_CONNECTION
         }
+
+#ifdef BLEMIDI_FORCE_NEW_CONNECTION
+        // Renew Client
+        NimBLEDevice::deleteClient(pClient);
+        NimBLEDevice::createClient();
+        pClient = nullptr;
+#endif // BLEMIDI_FORCE_NEW_CONNECTION
 
         //Try reconnection or search a new one
         NimBLEDevice::getScan()->start(1, scanEndedCB);
@@ -481,6 +510,7 @@ bool BLEMIDI_Client_ESP32::connect()
 {
     using namespace std::placeholders; //<- for bind funtion in callback notification
 
+#ifndef BLEMIDI_FORCE_NEW_CONNECTION
     /** Check if we have a client we should reuse first
      *  Special case when we already know this device
      *  This saves considerable time and power.
@@ -512,6 +542,7 @@ bool BLEMIDI_Client_ESP32::connect()
         NimBLEDevice::deleteClient(_client);
         _client = nullptr;
     }
+#endif //BLEMIDI_FORCE_NEW_CONNECTION
 
     if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS)
     {
