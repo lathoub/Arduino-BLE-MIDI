@@ -16,6 +16,7 @@ arduino-cli config set library.enable_unsafe_install true
 arduino-cli core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
 arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 arduino-cli core update-index -v
+arduino-cli core list
 
 # Install Arduino AVR core
 arduino-cli core install arduino:avr
