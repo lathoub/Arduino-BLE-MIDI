@@ -20,7 +20,7 @@ arduino-cli core update-index
 # arduino-cli core install arduino:avr
 # arduino-cli core install arduino:samd
 # arduino-cli core install arduino:esp8266
-arduino-cli core install esp32:esp32
+arduino-cli core install esp32:esp32:DOIT-ESP32-DEVKIT-V1
 
 # List the boards
 arduino-cli board list
