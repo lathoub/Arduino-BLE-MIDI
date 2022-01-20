@@ -22,6 +22,9 @@ arduino-cli core update-index
 # arduino-cli core install arduino:esp8266
 arduino-cli core install esp32:esp32
 
+# List the boards
+arduino-cli board list
+
 # Link Arduino library
 ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/CI_Test_Library
 
