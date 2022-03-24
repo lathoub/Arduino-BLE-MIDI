@@ -2,13 +2,14 @@
 
 #include <ArduinoBLE.h>
 
-//BLEService midiService(SERVICE_UUID);
-//BLEStringCharacteristic midiChar(CHARACTERISTIC_UUID,  // standard 16-bit characteristic UUID
-//    BLERead | BLEWrite | BLENotify | BLEWriteWithoutResponse, 16); // remote clients will be able to get notifications if this characteristic changes
-
 #define BLE_POLLING
 
 BEGIN_BLEMIDI_NAMESPACE
+
+BLEService midiService(SERVICE_UUID);
+
+BLEStringCharacteristic midiChar(CHARACTERISTIC_UUID,  // standard 16-bit characteristic UUID
+    BLERead | BLEWrite | BLENotify | BLEWriteWithoutResponse, 16); // remote clients will be able to get notifications if this characteristic changes
 
 template<typename T, int rawSize>
 class Fifo {
@@ -220,12 +221,12 @@ bool BLEMIDI_ArduinoBLE::begin(const char* deviceName, BLEMIDI_Transport<class B
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> &)BLE##Name);
+    BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> BLE##Name(DeviceName); \
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> &)BLE##Name);
 
  /*! \brief Create a default instance for nRF52 (Nano 33 BLE) named BLE-MIDI
  */
 #define BLEMIDI_CREATE_DEFAULT_INSTANCE() \
-BLEMIDI_CREATE_INSTANCE("BLE-MIDI", MIDI)
+    BLEMIDI_CREATE_INSTANCE("BLE-MIDI", MIDI)
 
 END_BLEMIDI_NAMESPACE
