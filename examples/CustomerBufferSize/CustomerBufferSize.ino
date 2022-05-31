@@ -9,8 +9,7 @@ struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::DefaultSettings {
 //#include <hardware/BLEMIDI_nRF52.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
-BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE, CustomBufferSizeSettings> BLEMIDI("Esp32-NimBLE-MIDI"); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE>, BLEMIDI_NAMESPACE::MySettings> MIDI((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE> &)BLEMIDI);
+BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-NimBLE-MIDI", MIDI, BLEMIDI_NAMESPACE::DefaultSettings);
 
 unsigned long t0 = millis();
 bool isConnected = false;
@@ -18,10 +17,14 @@ bool isConnected = false;
 // -----------------------------------------------------------------------------
 // When BLE connected, LED will turn on (indication that connection was successful)
 // When receiving a NoteOn, LED will go out, on NoteOff, light comes back on.
-// This is an easy and conveniant way to show that the connection is alive and working. 
+// This is an easy and conveniant way to show that the connection is alive and working.
 // -----------------------------------------------------------------------------
 void setup()
 {
+  Serial.begin(115200);
+  while (!Serial) {}
+  Serial.println("booting");
+
   MIDI.begin();
 
   pinMode(LED_BUILTIN, OUTPUT);
