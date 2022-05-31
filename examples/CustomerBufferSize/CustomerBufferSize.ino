@@ -9,7 +9,7 @@ struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::DefaultSettings {
 //#include <hardware/BLEMIDI_nRF52.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
-BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-NimBLE-MIDI", MIDI, BLEMIDI_NAMESPACE::DefaultSettings);
+BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-NimBLE-MIDI", MIDI, CustomBufferSizeSettings);
 
 unsigned long t0 = millis();
 bool isConnected = false;
