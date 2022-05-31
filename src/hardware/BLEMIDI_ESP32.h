@@ -15,7 +15,7 @@ private:
     BLEAdvertising *_advertising = nullptr;
     BLECharacteristic *_characteristic = nullptr;
 
-    BLEMIDI_Transport<class BLEMIDI_ESP32> *_bleMidiTransport = nullptr;
+    BLEMIDI_Transport<class BLEMIDI_ESP32, DefaultSettings> *_bleMidiTransport = nullptr;
 
     friend class MyServerCallbacks;
     friend class MyCharacteristicCallbacks;
@@ -28,7 +28,7 @@ public:
     {
     }
 
-    bool begin(const char *, BLEMIDI_Transport<class BLEMIDI_ESP32> *);
+    bool begin(const char *, BLEMIDI_Transport<class BLEMIDI_ESP32, DefaultSettings> *);
 
     void end()
     {
@@ -121,7 +121,7 @@ protected:
     }
 };
 
-bool BLEMIDI_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_ESP32> *bleMidiTransport)
+bool BLEMIDI_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_ESP32, DefaultSettings> *bleMidiTransport)
 {
     _bleMidiTransport = bleMidiTransport;
 
@@ -161,10 +161,14 @@ bool BLEMIDI_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class BLEMID
     _advertising->setAppearance(0x00);
     _advertising->start();
 
-    Serial.println("begin");
-
     return true;
 }
+
+/*! \brief Create an instance for ESP32 named <DeviceName>
+ */
+#define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, CustomSettings)                                                 \
+    BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32, CustomSettings> BLE##Name(DeviceName); \
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32, CustomSettings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32, CustomSettings> &)BLE##Name);
 
 /*! \brief Create an instance for ESP32 named <DeviceName>
  */

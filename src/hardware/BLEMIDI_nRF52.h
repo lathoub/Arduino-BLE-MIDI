@@ -12,7 +12,7 @@ private:
 //    BLEDis bledis;
 //    BLEMidi blemidi;
 
-    BLEMIDI_NAMESPACE::BLEMIDI_Transport<class BLEMIDI_nRF52>* _bleMidiTransport;
+    BLEMIDI_NAMESPACE::BLEMIDI_Transport<class BLEMIDI_nRF52, DefaultSettings>* _bleMidiTransport;
 
     friend class MyServerCallbacks; 
     friend class MyCharacteristicCallbacks; 
@@ -22,7 +22,7 @@ public:
     {
     }
     
-	bool begin(const char*, BLEMIDI_NAMESPACE::BLEMIDI_Transport<class BLEMIDI_nRF52>*);
+	bool begin(const char*, BLEMIDI_NAMESPACE::BLEMIDI_Transport<class BLEMIDI_nRF52, DefaultSettings>*);
     
     void end() 
     {
@@ -61,7 +61,7 @@ protected:
 	}
 };
 
-bool BLEMIDI_nRF52::begin(const char* deviceName, BLEMIDI_NAMESPACE::BLEMIDI_Transport<class BLEMIDI_nRF52>* bleMidiTransport)
+bool BLEMIDI_nRF52::begin(const char* deviceName, BLEMIDI_NAMESPACE::BLEMIDI_Transport<class BLEMIDI_nRF52, DefaultSettings>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 
@@ -113,6 +113,12 @@ bool BLEMIDI_nRF52::begin(const char* deviceName, BLEMIDI_NAMESPACE::BLEMIDI_Tra
     
     return true;
 }
+
+ /*! \brief Create an instance for nRF52 named <DeviceName>
+ */
+#define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, CustomSettings) \
+BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52, CustomSettings> BLE##Name(DeviceName); \
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52, CustomSettings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52, CustomSettings> &)BLE##Name);
 
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
