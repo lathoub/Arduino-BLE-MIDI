@@ -60,10 +60,11 @@ private:
     T raw[rawSize];
 };
 
+template <class _Settings>
 class BLEMIDI_ArduinoBLE
 {
 private:   
-    static BLEMIDI_Transport<class BLEMIDI_ArduinoBLE, DefaultSettings>* _bleMidiTransport;
+    static BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings>* _bleMidiTransport;
     static BLEDevice* _central;
 
     Fifo<byte, rawSize> mRxBuffer;
@@ -73,7 +74,7 @@ public:
     {
     }
     
-	bool begin(const char*, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE, DefaultSettings>*);
+	bool begin(const char*, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings>*);
     
     void end() 
     {
@@ -183,10 +184,11 @@ protected:
     }
 };
 
-BLEMIDI_Transport<class BLEMIDI_ArduinoBLE, DefaultSettings>* BLEMIDI_ArduinoBLE::_bleMidiTransport = nullptr;
+BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings>* BLEMIDI_ArduinoBLE::_bleMidiTransport = nullptr;
 BLEDevice* BLEMIDI_ArduinoBLE::_central = nullptr;
 
-bool BLEMIDI_ArduinoBLE::begin(const char* deviceName, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE, DefaultSettings>* bleMidiTransport)
+template <class _Settings>
+bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char* deviceName, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 
@@ -219,9 +221,9 @@ bool BLEMIDI_ArduinoBLE::begin(const char* deviceName, BLEMIDI_Transport<class B
 
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
-#define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, CustomSettings) \
-BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE, CustomSettings> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE, CustomSettings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE, CustomSettings> &)BLE##Name);
+#define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings) \
+BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings> BLE##Name(DeviceName); \
+MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings> &)BLE##Name);
 
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
