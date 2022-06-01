@@ -1,18 +1,19 @@
 #include <BLEMIDI_Transport.h>
 
-// struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::DefaultSettings {
-//  static const size_t MaxBufferSize = 16; // was 64
-//};
+ struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::DefaultSettings {
+  static const size_t MaxBufferSize = 16;
+};
 
 #include <hardware/BLEMIDI_ESP32_NimBLE.h>
 //#include <hardware/BLEMIDI_ESP32.h>
 //#include <hardware/BLEMIDI_nRF52.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
-BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-NimBLE-MIDI", MIDI, 16);
+BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-NimBLE-MIDI", MIDI, BLEMIDI_NAMESPACE::DefaultSettings);
 
 unsigned long t0 = millis();
 bool isConnected = false;
+
 
 // -----------------------------------------------------------------------------
 // When BLE connected, LED will turn on (indication that connection was successful)

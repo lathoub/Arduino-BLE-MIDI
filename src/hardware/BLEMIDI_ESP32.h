@@ -129,7 +129,7 @@ bool BLEMIDI_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class BLEMID
 
     // To communicate between the 2 cores.
     // Core_0 runs here, core_1 runs the BLE stack
-    mRxQueue = xQueueCreate(64, sizeof(uint8_t)); // TODO Settings::MaxBufferSize
+    mRxQueue = xQueueCreate(_Settings::MaxBufferSize, sizeof(uint8_t));
 
     _server = BLEDevice::createServer();
     _server->setCallbacks(new MyServerCallbacks(this));
