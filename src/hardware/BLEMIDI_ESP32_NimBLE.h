@@ -5,6 +5,7 @@
 
 BEGIN_BLEMIDI_NAMESPACE
 
+template <int Size>
 class BLEMIDI_ESP32_NimBLE
 {
 private:
@@ -12,10 +13,10 @@ private:
     BLEAdvertising *_advertising = nullptr;
     BLECharacteristic *_characteristic = nullptr;
 
-    BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE, DefaultSettings> *_bleMidiTransport = nullptr;
+    BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE<Size>, Size> *_bleMidiTransport = nullptr;
 
-    friend class MyServerCallbacks;
-    friend class MyCharacteristicCallbacks;
+    template <int> friend class MyServerCallbacks;
+    template <int> friend class MyCharacteristicCallbacks;
 
 protected:
     QueueHandle_t mRxQueue;
@@ -25,7 +26,7 @@ public:
     {
     }
 
-    bool begin(const char *, BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE, DefaultSettings> *);
+    bool begin(const char *, BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE<Size>, Size> *);
 
     void end()
     {
@@ -69,16 +70,17 @@ protected:
     }
 };
 
+template <int Size>
 class MyServerCallbacks : public BLEServerCallbacks
 {
 public:
-    MyServerCallbacks(BLEMIDI_ESP32_NimBLE *bluetoothEsp32)
+    MyServerCallbacks(BLEMIDI_ESP32_NimBLE<Size> *bluetoothEsp32)
         : _bluetoothEsp32(bluetoothEsp32)
     {
     }
 
 protected:
-    BLEMIDI_ESP32_NimBLE *_bluetoothEsp32 = nullptr;
+    BLEMIDI_ESP32_NimBLE<Size> *_bluetoothEsp32 = nullptr;
 
     void onConnect(BLEServer *)
     {
@@ -93,16 +95,17 @@ protected:
     }
 };
 
+template <int Size>
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
 {
 public:
-    MyCharacteristicCallbacks(BLEMIDI_ESP32_NimBLE *bluetoothEsp32)
+    MyCharacteristicCallbacks(BLEMIDI_ESP32_NimBLE<Size> *bluetoothEsp32)
         : _bluetoothEsp32(bluetoothEsp32)
     {
     }
 
 protected:
-    BLEMIDI_ESP32_NimBLE *_bluetoothEsp32 = nullptr;
+    BLEMIDI_ESP32_NimBLE<Size> *_bluetoothEsp32 = nullptr;
 
     void onWrite(BLECharacteristic *characteristic)
     {
@@ -114,7 +117,8 @@ protected:
     }
 };
 
-bool BLEMIDI_ESP32_NimBLE::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE, DefaultSettings> *bleMidiTransport)
+template <int Size>
+bool BLEMIDI_ESP32_NimBLE<Size>::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_ESP32_NimBLE<Size>, Size> *bleMidiTransport)
 {
     _bleMidiTransport = bleMidiTransport;
 
@@ -122,10 +126,10 @@ bool BLEMIDI_ESP32_NimBLE::begin(const char *deviceName, BLEMIDI_Transport<class
 
     // To communicate between the 2 cores.
     // Core_0 runs here, core_1 runs the BLE stack
-    mRxQueue = xQueueCreate(64, sizeof(uint8_t)); // TODO Settings::MaxBufferSize
+    mRxQueue = xQueueCreate(Size, sizeof(uint8_t)); // TODO DefaultSettings::MaxBufferSize
 
     _server = BLEDevice::createServer();
-    _server->setCallbacks(new MyServerCallbacks(this));
+    _server->setCallbacks(new MyServerCallbacks<Size>(this));
     _server->advertiseOnDisconnect(true);
 
     // Create the BLE Service
@@ -139,7 +143,7 @@ bool BLEMIDI_ESP32_NimBLE::begin(const char *deviceName, BLEMIDI_Transport<class
             NIMBLE_PROPERTY::NOTIFY |
             NIMBLE_PROPERTY::WRITE_NR);
 
-    _characteristic->setCallbacks(new MyCharacteristicCallbacks(this));
+    _characteristic->setCallbacks(new MyCharacteristicCallbacks<Size>(this));
 
     auto _security = new NimBLESecurity();
     _security->setAuthenticationMode(ESP_LE_AUTH_BOND);
@@ -158,9 +162,9 @@ bool BLEMIDI_ESP32_NimBLE::begin(const char *deviceName, BLEMIDI_Transport<class
 
 /*! \brief Create an instance for ESP32 named <DeviceName>
  */
-#define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, CustomSettings)                                                        \
-    BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE, CustomSettings> BLE##Name(DeviceName); \
-    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE, CustomSettings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE, CustomSettings> &)BLE##Name);
+#define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, Size)                                                        \
+    BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE<Size>, Size> BLE##Name(DeviceName); \
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE<Size>, Size>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE<Size>, Size> &)BLE##Name);
 
 /*! \brief Create an instance for ESP32 named <DeviceName>
  */

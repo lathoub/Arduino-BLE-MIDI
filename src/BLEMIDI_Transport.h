@@ -23,16 +23,14 @@ static const char *const CHARACTERISTIC_UUID = "7772e5db-3868-4112-a1a9-f2669d10
 
 #define MIDI_TYPE 0x80
 
-template <class T, class _Settings = DefaultSettings>
+template <class T, int Size = 64>
 class BLEMIDI_Transport
 {
-    typedef _Settings Settings;
-
 private:
-    byte mRxBuffer[Settings::MaxBufferSize];
+    byte mRxBuffer[Size];
     unsigned mRxIndex = 0;
 
-    byte mTxBuffer[Settings::MaxBufferSize]; // minimum 5 bytes
+    byte mTxBuffer[Size]; // minimum 5 bytes
     unsigned mTxIndex = 0;
 
     char mDeviceName[24];
@@ -57,6 +55,9 @@ public:
     void begin()
     {
         mBleClass.begin(mDeviceName, this);
+
+          Serial.print("size : ");
+          Serial.println(Size);
     }
 
     void end()

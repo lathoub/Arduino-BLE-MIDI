@@ -66,7 +66,7 @@ private:
     static BLEMIDI_Transport<class BLEMIDI_ArduinoBLE, DefaultSettings>* _bleMidiTransport;
     static BLEDevice* _central;
 
-    Fifo<byte, 64> mRxBuffer;
+    Fifo<byte, rawSize> mRxBuffer;
 
 public:
 	BLEMIDI_ArduinoBLE()
