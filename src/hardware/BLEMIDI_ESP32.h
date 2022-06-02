@@ -16,7 +16,7 @@ private:
     BLEAdvertising *_advertising = nullptr;
     BLECharacteristic *_characteristic = nullptr;
 
-    BLEMIDI_Transport<class BLEMIDI_ESP32<_Settings>, _Settings> *_bleMidiTransport = nullptr;
+    BLEMIDI_Transport<class BLEMIDI_ESP32<_Settings>, _Settings>* _bleMidiTransport = nullptr;
 
     template <class> friend class MyServerCallbacks;
     template <class> friend class MyCharacteristicCallbacks;
@@ -168,7 +168,7 @@ bool BLEMIDI_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Transport<c
     return true;
 }
 
-/*! \brief Create an instance for ESP32 named <DeviceName>
+/*! \brief Create a customer instance for ESP32 named <DeviceName>
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings)                                                        \
     BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32<_Settings>, _Settings> BLE##Name(DeviceName); \
