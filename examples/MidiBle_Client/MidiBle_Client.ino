@@ -28,6 +28,10 @@
 #include <Arduino.h>
 #include <BLEMIDI_Transport.h>
 
+ struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::DefaultSettings {
+  static const size_t MaxBufferSize = 16;
+};
+
 #include <hardware/BLEMIDI_Client_ESP32.h>
 
 //#include <hardware/BLEMIDI_ESP32_NimBLE.h>
@@ -35,7 +39,7 @@
 //#include <hardware/BLEMIDI_nRF52.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
-BLEMIDI_CREATE_DEFAULT_INSTANCE(); //Connect to first server found
+BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-BLE-MIDI", MIDI, CustomBufferSizeSettings); // Connect to first server found
 
 //BLEMIDI_CREATE_INSTANCE("",MIDI)                  //Connect to the first server found
 //BLEMIDI_CREATE_INSTANCE("f2:c1:d9:36:e7:6b",MIDI) //Connect to a specific BLE address server

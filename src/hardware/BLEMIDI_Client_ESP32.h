@@ -174,6 +174,7 @@ BEGIN_BLEMIDI_NAMESPACE
 #define BLEMIDI_CLIENT_SECURITY_AUTH (BLEMIDI_CLIENT_BOND_DUMMY | BLEMIDI_CLIENT_MITM_DUMMY | BLEMIDI_CLIENT_PAIR_DUMMY)
 
 /** Define a class to handle the callbacks when advertisments are received */
+template <class _Settings>
 class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
 {
 public:
@@ -220,6 +221,7 @@ protected:
 void scanEndedCB(NimBLEScanResults results);
 
 /** Define the class that performs Client Midi (nimBLE) */
+template <class _Settings>
 class BLEMIDI_Client_ESP32
 {
 private:
@@ -229,15 +231,14 @@ private:
     BLERemoteService *pSvc = nullptr;
     bool firstTimeSend = true; //First writeValue get sends like Write with reponse for clean security flags. After first time, all messages are send like WriteNoResponse for increase transmision speed.
 
-    BLEMIDI_Transport<class BLEMIDI_Client_ESP32> *_bleMidiTransport = nullptr;
+    BLEMIDI_Transport<class BLEMIDI_Client_ESP32<_Settings>, _Settings> *_bleMidiTransport = nullptr;
 
     bool specificTarget = false;
 
-    friend class AdvertisedDeviceCallbacks;
-    friend class MyClientCallbacks;
-    friend class MIDI_NAMESPACE::MidiInterface<BLEMIDI_Transport<BLEMIDI_Client_ESP32>, MySettings>; //
+ // TODO: somehow the forward declaration of the template class is not accepted by the compiler
+//    template <class> friend MyClientCallbacks;
 
-    AdvertisedDeviceCallbacks myAdvCB;
+    AdvertisedDeviceCallbacks<_Settings> myAdvCB;
 
 protected:
     QueueHandle_t mRxQueue;
@@ -247,7 +248,7 @@ public:
     {
     }
 
-    bool begin(const char *, BLEMIDI_Transport<class BLEMIDI_Client_ESP32> *);
+    bool begin(const char *, BLEMIDI_Transport<class BLEMIDI_Client_ESP32<_Settings>, _Settings> *);
 
     bool end()
     {
@@ -294,61 +295,55 @@ protected:
         _bleMidiTransport->receive(buffer, length);
     }
 
-    void connectCallbacks(MIDI_NAMESPACE::MidiInterface<BLEMIDI_Transport<BLEMIDI_Client_ESP32>, MySettings> *MIDIcallback);
+    void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify);
 
+    void scan();
+    bool connect();
+
+public: // TODO: somehow the forward declaration of the template class is not accepted by the compiler
     void connected()
     {
         if (_bleMidiTransport->_connectedCallback)
-        {
             _bleMidiTransport->_connectedCallback();
-        }
         firstTimeSend = true;
     }
 
     void disconnected()
     {
         if (_bleMidiTransport->_disconnectedCallback)
-        {
             _bleMidiTransport->_disconnectedCallback();
-        }
         firstTimeSend = true;
     }
-
-    void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify);
-
-    void scan();
-    bool connect();
 };
 
 /** Define the class that performs interruption callbacks */
+template <class _Settings>
 class MyClientCallbacks : public BLEClientCallbacks
 {
 public:
-    MyClientCallbacks(BLEMIDI_Client_ESP32 *bluetoothEsp32)
+    MyClientCallbacks(BLEMIDI_Client_ESP32<_Settings> *bluetoothEsp32)
         : _bluetoothEsp32(bluetoothEsp32)
     {
     }
 
 protected:
-    BLEMIDI_Client_ESP32 *_bluetoothEsp32 = nullptr;
+    BLEMIDI_Client_ESP32<_Settings> *_bluetoothEsp32 = nullptr;
 
     uint32_t onPassKeyRequest()
     {
         return userOnPassKeyRequest();
     };
 
-    void onConnect(BLEClient *pClient)
+    void onConnect(BLEClient*)
     {
         //Serial.println("##Connected##");
         //pClient->updateConnParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL, BLEMIDI_CLIENT_COMM_LATENCY, BLEMIDI_CLIENT_COMM_TIMEOUT);
         vTaskDelay(1);
         if (_bluetoothEsp32)
-        {
             _bluetoothEsp32->connected();
-        }
     };
 
-    void onDisconnect(BLEClient *pClient)
+    void onDisconnect(BLEClient*)
     {
         //Serial.print(pClient->getPeerAddress().toString().c_str());
         //Serial.println(" Disconnected - Starting scan");
@@ -403,7 +398,8 @@ protected:
 ##########################################
 */
 
-bool BLEMIDI_Client_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_Client_ESP32> *bleMidiTransport)
+template <class _Settings>
+bool BLEMIDI_Client_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_Client_ESP32<_Settings>, _Settings> *bleMidiTransport)
 {
     _bleMidiTransport = bleMidiTransport;
 
@@ -450,7 +446,8 @@ bool BLEMIDI_Client_ESP32::begin(const char *deviceName, BLEMIDI_Transport<class
     return true;
 }
 
-bool BLEMIDI_Client_ESP32::available(byte *pvBuffer)
+template <class _Settings>
+bool BLEMIDI_Client_ESP32<_Settings>::available(byte *pvBuffer)
 {
     if (myAdvCB.enableConnection)
     {
@@ -479,7 +476,8 @@ bool BLEMIDI_Client_ESP32::available(byte *pvBuffer)
 }
 
 /** Notification receiving handler callback */
-void BLEMIDI_Client_ESP32::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify)
+template <class _Settings>
+void BLEMIDI_Client_ESP32<_Settings>::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify)
 {
     if (this->_characteristic == pRemoteCharacteristic) //Redundant protection
     {
@@ -487,7 +485,8 @@ void BLEMIDI_Client_ESP32::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacter
     }
 }
 
-void BLEMIDI_Client_ESP32::scan()
+template <class _Settings>
+void BLEMIDI_Client_ESP32<_Settings>::scan()
 {
     // Retrieve a Scanner and set the callback you want to use to be informed when a new device is detected.
     // Specify that you want active scanning and start the
@@ -506,7 +505,8 @@ void BLEMIDI_Client_ESP32::scan()
     }
 };
 
-bool BLEMIDI_Client_ESP32::connect()
+template <class _Settings>
+bool BLEMIDI_Client_ESP32<_Settings>::connect()
 {
     using namespace std::placeholders; //<- for bind funtion in callback notification
 
@@ -553,7 +553,7 @@ bool BLEMIDI_Client_ESP32::connect()
     // Create and setup a new client
     _client = BLEDevice::createClient();
 
-    _client->setClientCallbacks(new MyClientCallbacks(this), false);
+    _client->setClientCallbacks(new MyClientCallbacks<_Settings>(this), false);
 
     _client->setConnectionParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL, BLEMIDI_CLIENT_COMM_LATENCY, BLEMIDI_CLIENT_COMM_TIMEOUT);
 
@@ -622,7 +622,14 @@ void scanEndedCB(NimBLEScanResults results)
 
 END_BLEMIDI_NAMESPACE
 
-/*! \brief Create an instance for ESP32 named <DeviceName>, and adviertise it like "Prefix + <DeviceName> + Subfix"
+/*! \brief Create a custom instance for ESP32 named <DeviceName>, and advertise it like "Prefix + <DeviceName> + Subfix"
+    It will try to connect to a specific server with equal name or addr than <DeviceName>. If <DeviceName> is "", it will connect to first midi server
+ */
+#define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings)                                                        \
+    BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> BLE##Name(DeviceName); \
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> &)BLE##Name);
+
+/*! \brief Create an instance for ESP32 named <DeviceName>, and advertise it like "Prefix + <DeviceName> + Subfix"
     It will try to connect to a specific server with equal name or addr than <DeviceName>. If <DeviceName> is "", it will connect to first midi server
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name)                                                        \
