@@ -2,15 +2,17 @@
 
 #include <ArduinoBLE.h>
 
-BLEService midiService(SERVICE_UUID);
-BLEStringCharacteristic midiChar(CHARACTERISTIC_UUID,  // standard 16-bit characteristic UUID
-    BLERead | BLEWrite | BLENotify | BLEWriteWithoutResponse, 16); // remote clients will be able to get notifications if this characteristic changes
-
 #define BLE_POLLING
+//#define BLE_EVENTS // TODO: requires static function (don't like)
 
 BEGIN_BLEMIDI_NAMESPACE
 
-template<typename T, int rawSize>
+BLEService midiService(SERVICE_UUID);
+
+BLEStringCharacteristic midiChar(CHARACTERISTIC_UUID,  // standard 16-bit characteristic UUID
+    BLERead | BLEWrite | BLENotify | BLEWriteWithoutResponse, 16); // remote clients will be able to get notifications if this characteristic changes
+
+template<typename T, short rawSize>
 class Fifo {
 public:
 	const size_t size;				//speculative feature, in case it's needed
@@ -64,10 +66,10 @@ template <class _Settings>
 class BLEMIDI_ArduinoBLE
 {
 private:   
-    static BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings>* _bleMidiTransport;
-    static BLEDevice* _central;
+    BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings>* _bleMidiTransport;
+    BLEDevice* _central;
 
-    Fifo<byte, rawSize> mRxBuffer;
+    Fifo<byte, _Settings::MaxBufferSize> mRxBuffer;
 
 public:
 	BLEMIDI_ArduinoBLE()
@@ -78,7 +80,6 @@ public:
     
     void end() 
     {
-        
     }
 
     void write(uint8_t* buffer, size_t length)
@@ -112,8 +113,8 @@ public:
         return false;
 #endif
 #ifdef BLE_EVENTS
-/      BLE.poll();
-        return ; // ??
+        BLE.poll();
+        return false; 
 #endif
     }
 
@@ -124,7 +125,7 @@ public:
     }
 
 protected:
-	static void receive(const unsigned char* buffer, size_t length)
+	void receive(const unsigned char* buffer, size_t length)
 	{
         // forward the buffer so it can be parsed
         _bleMidiTransport->receive((uint8_t*)buffer, length);
@@ -160,14 +161,15 @@ protected:
         return true;
     }
 
-	static void blePeripheralConnectHandler(BLEDevice central)
+	void blePeripheralConnectHandler(BLEDevice central)
 	{
         _central = &central;
+
 		if (_bleMidiTransport->_connectedCallback)
 			_bleMidiTransport->_connectedCallback();
 	}
 
-	static void blePeripheralDisconnectHandler(BLEDevice central)
+	void blePeripheralDisconnectHandler(BLEDevice central)
 	{
 		if (_bleMidiTransport->_disconnectedCallback)
 			_bleMidiTransport->_disconnectedCallback();
@@ -175,7 +177,7 @@ protected:
         _central = nullptr;
 	}
 
-    static void characteristicWritten(BLEDevice central, BLECharacteristic characteristic) {
+    void characteristicWritten(BLEDevice central, BLECharacteristic characteristic) {
         auto buffer = characteristic.value();
         auto length = characteristic.valueLength();
 
@@ -184,14 +186,12 @@ protected:
     }
 };
 
-BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings>* BLEMIDI_ArduinoBLE::_bleMidiTransport = nullptr;
-BLEDevice* BLEMIDI_ArduinoBLE::_central = nullptr;
-
 template <class _Settings>
 bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char* deviceName, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings>* bleMidiTransport)
 {
 	_bleMidiTransport = bleMidiTransport;
 
+    // initialize the Bluetooth® Low Energy hardware
     if (!BLE.begin()) 
         return false;
 
@@ -219,21 +219,20 @@ bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char* deviceName, BLEMIDI_Transp
     return true;
 }
 
- /*! \brief Create an instance for nRF52 named <DeviceName>
+ /*! \brief Create an instance for ArduinoBLE <DeviceName>
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings) \
-BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings> &)BLE##Name);
+    BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings> BLE##Name(DeviceName); \
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings> &)BLE##Name);
 
- /*! \brief Create an instance for nRF52 named <DeviceName>
+ /*! \brief Create an instance for ArduinoBLE <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE> &)BLE##Name);
+    BLEMIDI_CREATE_CUSTOM_INSTANCE (DeviceName, Name, BLEMIDI_NAMESPACE::DefaultSettings)
 
- /*! \brief Create a default instance for nRF52 (Nano 33 BLE) named BLE-MIDI
+ /*! \brief Create a default instance for ArduinoBLE named BLE-MIDI
  */
 #define BLEMIDI_CREATE_DEFAULT_INSTANCE() \
-BLEMIDI_CREATE_INSTANCE("BLE-MIDI", MIDI)
+    BLEMIDI_CREATE_INSTANCE("BLE-MIDI", MIDI)
 
 END_BLEMIDI_NAMESPACE

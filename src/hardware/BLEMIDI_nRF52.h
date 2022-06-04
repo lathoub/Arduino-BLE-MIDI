@@ -119,18 +119,17 @@ bool BLEMIDI_nRF52<_Settings>::begin(const char* deviceName, BLEMIDI_NAMESPACE::
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings) \
-BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings> &)BLE##Name);
+    BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings> BLE##Name(DeviceName); \
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings> &)BLE##Name);
 
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52> BLE##Name(DeviceName); \
-MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52> &)BLE##Name);
+    BLEMIDI_CREATE_CUSTOM_INSTANCE (DeviceName, Name, BLEMIDI_NAMESPACE::DefaultSettings)
 
  /*! \brief Create a default instance for nRF52 named BLE-MIDI
  */
 #define BLEMIDI_CREATE_DEFAULT_INSTANCE() \
-BLEMIDI_CREATE_INSTANCE("nRF85BLE-MIDI", MIDI)
+    BLEMIDI_CREATE_INSTANCE("nRF85BLE-MIDI", MIDI)
 
 END_BLEMIDI_NAMESPACE

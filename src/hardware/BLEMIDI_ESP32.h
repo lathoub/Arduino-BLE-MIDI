@@ -170,15 +170,14 @@ bool BLEMIDI_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Transport<c
 
 /*! \brief Create a customer instance for ESP32 named <DeviceName>
  */
-#define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings)                                                        \
+#define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings) \
     BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32<_Settings>, _Settings> BLE##Name(DeviceName); \
     MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32<_Settings>, _Settings> &)BLE##Name);
 
 /*! \brief Create an instance for ESP32 named <DeviceName>
  */
-#define BLEMIDI_CREATE_INSTANCE(DeviceName, Name)                                                 \
-    BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> BLE##Name(DeviceName); \
-    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32> &)BLE##Name);
+#define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
+    BLEMIDI_CREATE_CUSTOM_INSTANCE (DeviceName, Name, BLEMIDI_NAMESPACE::DefaultSettings)
 
 /*! \brief Create a default instance for ESP32 named BLE-MIDI
  */
