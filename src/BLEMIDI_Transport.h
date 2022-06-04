@@ -55,9 +55,6 @@ public:
     void begin()
     {
         mBleClass.begin(mDeviceName, this);
-
-          Serial.print("size : ");
-          Serial.println(_Settings::MaxBufferSize);
     }
 
     void end()
