@@ -2,9 +2,6 @@
 
 #include <ArduinoBLE.h>
 
-#define BLE_POLLING
-//#define BLE_EVENTS // TODO: requires static function (don't like)
-
 BEGIN_BLEMIDI_NAMESPACE
 
 template <typename T, short rawSize>
@@ -90,7 +87,6 @@ public:
 
     bool available(byte *pvBuffer)
     {
-#ifdef BLE_POLLING
         if (mRxBuffer.count() > 0)
         {
             *pvBuffer = mRxBuffer.dequeue();
@@ -109,11 +105,6 @@ public:
             }
         }
         return false;
-#endif
-#ifdef BLE_EVENTS
-        BLE.poll();
-        return false;
-#endif
     }
 
     void add(byte value)
@@ -136,7 +127,7 @@ protected:
         {
             if (_central)
             {
-                BLEMIDI_ArduinoBLE::blePeripheralDisconnectHandler(*_central);
+                onDisconnected(*_central);
                 _central = nullptr;
             }
             return false;
@@ -147,15 +138,15 @@ protected:
 
         if (nullptr == _central)
         {
-            BLEMIDI_ArduinoBLE::blePeripheralConnectHandler(central);
+            onConnected(central);
             _central = &central;
         }
         else
         {
             if (*_central != central)
             {
-                BLEMIDI_ArduinoBLE::blePeripheralDisconnectHandler(*_central);
-                BLEMIDI_ArduinoBLE::blePeripheralConnectHandler(central);
+                onDisconnected(*_central);
+                onConnected(central);
                 _central = &central;
             }
         }
@@ -163,7 +154,7 @@ protected:
         return true;
     }
 
-    void blePeripheralConnectHandler(BLEDevice central)
+    void onConnected(BLEDevice central)
     {
         _central = &central;
 
@@ -171,21 +162,12 @@ protected:
             _bleMidiTransport->_connectedCallback();
     }
 
-    void blePeripheralDisconnectHandler(BLEDevice central)
+    void onDisconnected(BLEDevice central)
     {
         if (_bleMidiTransport->_disconnectedCallback)
             _bleMidiTransport->_disconnectedCallback();
 
         _central = nullptr;
-    }
-
-    void characteristicWritten(BLEDevice central, BLECharacteristic characteristic)
-    {
-        auto buffer = characteristic.value();
-        auto length = characteristic.valueLength();
-
-        if (length > 0)
-            receive(buffer, length);
     }
 };
 
@@ -207,14 +189,6 @@ bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Transp
     // set the initial value for the characeristic:
     // (when not set, the device will disconnect after 0.5 seconds)
     _midiChar.writeValue((uint8_t)0);
-
-#ifdef BLE_EVENTS
-    // assign event handlers for connected, disconnected to peripheral
-    BLE.setEventHandler(BLEConnected, BLEMIDI_ArduinoBLE::blePeripheralConnectHandler);
-    BLE.setEventHandler(BLEDisconnected, BLEMIDI_ArduinoBLE::blePeripheralDisconnectHandler);
-
-    _midiChar.setEventHandler(BLEWritten, characteristicWritten);
-#endif
 
     /* Start advertising BLE.  It will start continuously transmitting BLE
        advertising packets and will be visible to remote BLE central devices
