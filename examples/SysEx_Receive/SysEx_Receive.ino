@@ -2,7 +2,6 @@
 
 //#include <hardware/BLEMIDI_ESP32_NimBLE.h>
 #include <hardware/BLEMIDI_ESP32.h>
-//#include <hardware/BLEMIDI_nRF52.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
 BLEMIDI_CREATE_INSTANCE("CustomName", MIDI)

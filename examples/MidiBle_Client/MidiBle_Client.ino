@@ -36,7 +36,6 @@
 
 //#include <hardware/BLEMIDI_ESP32_NimBLE.h>
 //#include <hardware/BLEMIDI_ESP32.h>
-//#include <hardware/BLEMIDI_nRF52.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
 BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-BLE-MIDI", MIDI, CustomBufferSizeSettings); // Connect to first server found
