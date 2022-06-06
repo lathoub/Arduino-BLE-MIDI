@@ -174,7 +174,6 @@ BEGIN_BLEMIDI_NAMESPACE
 #define BLEMIDI_CLIENT_SECURITY_AUTH (BLEMIDI_CLIENT_BOND_DUMMY | BLEMIDI_CLIENT_MITM_DUMMY | BLEMIDI_CLIENT_PAIR_DUMMY)
 
 /** Define a class to handle the callbacks when advertisments are received */
-template <class _Settings>
 class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
 {
 public:
@@ -235,10 +234,7 @@ private:
 
     bool specificTarget = false;
 
- // TODO: somehow the forward declaration of the template class is not accepted by the compiler
-//    template <class> friend MyClientCallbacks;
-
-    AdvertisedDeviceCallbacks<_Settings> myAdvCB;
+    AdvertisedDeviceCallbacks myAdvCB;
 
 protected:
     QueueHandle_t mRxQueue;
@@ -300,7 +296,7 @@ protected:
     void scan();
     bool connect();
 
-public: // TODO: somehow the forward declaration of the template class is not accepted by the compiler
+public: 
     void connected()
     {
         if (_bleMidiTransport->_connectedCallback)
@@ -432,7 +428,7 @@ bool BLEMIDI_Client_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
 
     // To communicate between the 2 cores.
     // Core_0 runs here, core_1 runs the BLE stack
-    mRxQueue = xQueueCreate(256, sizeof(uint8_t)); // TODO Settings::MaxBufferSize
+    mRxQueue = xQueueCreate(_Settings::MaxBufferSize, sizeof(uint8_t));
 
     NimBLEDevice::setSecurityIOCap(BLEMIDI_CLIENT_SECURITY_CAP); // Attention, it may need a passkey
     NimBLEDevice::setSecurityAuth(BLEMIDI_CLIENT_SECURITY_AUTH);
