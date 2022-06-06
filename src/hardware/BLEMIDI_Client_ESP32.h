@@ -628,9 +628,8 @@ END_BLEMIDI_NAMESPACE
 /*! \brief Create an instance for ESP32 named <DeviceName>, and advertise it like "Prefix + <DeviceName> + Subfix"
     It will try to connect to a specific server with equal name or addr than <DeviceName>. If <DeviceName> is "", it will connect to first midi server
  */
-#define BLEMIDI_CREATE_INSTANCE(DeviceName, Name)                                                        \
-    BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<BLEMIDI_NAMESPACE::DefaultSettings>, BLEMIDI_NAMESPACE::DefaultSettings>  BLE##Name(DeviceName); \
-    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<BLEMIDI_NAMESPACE::DefaultSettings>, BLEMIDI_NAMESPACE::DefaultSettings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<BLEMIDI_NAMESPACE::DefaultSettings>, BLEMIDI_NAMESPACE::DefaultSettings> &)BLE##Name);
+#define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
+    BLEMIDI_CREATE_CUSTOM_INSTANCE (DeviceName, Name, BLEMIDI_NAMESPACE::DefaultSettings)
 
 /*! \brief Create a default instance for ESP32 named BLEMIDI-CLIENT. 
     It will try to connect to first midi ble server found.
