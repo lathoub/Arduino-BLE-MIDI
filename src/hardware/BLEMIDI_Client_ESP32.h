@@ -1,5 +1,14 @@
 #pragma once
 
+//#define MIDIBLECLIENTVERBOSE
+
+#ifdef MIDIBLECLIENTVERBOSE
+#define DEBUGCLIENT(_text_) Serial.println("DbgBC: " + (String)_text_);
+#else
+#define DEBUGCLIENT(_text_) ;
+#endif
+
+
 /*
 #############################################
 ########## USER DEFINES BEGINNING ###########
@@ -189,11 +198,11 @@ protected:
     {
         if (enableConnection) //not begin() or end()
         {
-            Serial.print("Advertised Device found: ");
-            Serial.println(advertisedDevice->toString().c_str());
+            DEBUGCLIENT("Advertised Device found: ");
+            DEBUGCLIENT(advertisedDevice->toString().c_str());
             if (advertisedDevice->isAdvertisingService(NimBLEUUID(SERVICE_UUID)))
             {
-                Serial.println("Found MIDI Service");
+                DEBUGCLIENT("Found MIDI Service");
                 if (!specificTarget || (advertisedDevice->getName() == nameTarget.c_str() || advertisedDevice->getAddress() == nameTarget))
                 {
                     /** Ready to connect now */
@@ -205,7 +214,7 @@ protected:
                 }
                 else
                 {
-                    Serial.println("Name error");
+                    DEBUGCLIENT("Name error");
                 }
             }
             else
@@ -332,7 +341,7 @@ protected:
 
     void onConnect(BLEClient*)
     {
-        //Serial.println("##Connected##");
+        DEBUGCLIENT("##Connected##");
         //pClient->updateConnParams(BLEMIDI_CLIENT_COMM_MIN_INTERVAL, BLEMIDI_CLIENT_COMM_MAX_INTERVAL, BLEMIDI_CLIENT_COMM_LATENCY, BLEMIDI_CLIENT_COMM_TIMEOUT);
         vTaskDelay(1);
         if (_bluetoothEsp32)
@@ -341,8 +350,8 @@ protected:
 
     void onDisconnect(BLEClient*)
     {
-        //Serial.print(pClient->getPeerAddress().toString().c_str());
-        //Serial.println(" Disconnected - Starting scan");
+        DEBUGCLIENT(pClient->getPeerAddress().toString().c_str());
+        DEBUGCLIENT(" Disconnected - Starting scan");
 
         if (_bluetoothEsp32)
         {
@@ -422,7 +431,7 @@ bool BLEMIDI_Client_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
         strDeviceName = BLEMIDI_CLIENT_NAME_PREFIX + strDeviceName + BLEMIDI_CLIENT_NAME_SUBFIX;
 #endif
     }
-    Serial.println(strDeviceName.c_str());
+    DEBUGCLIENT(strDeviceName.c_str());
 
     NimBLEDevice::init(strDeviceName);
 
@@ -496,7 +505,7 @@ void BLEMIDI_Client_ESP32<_Settings>::scan()
         pBLEScan->setWindow(500);
         pBLEScan->setActiveScan(true);
 
-        Serial.println("Scanning...");
+        DEBUGCLIENT("Scanning...");
         pBLEScan->start(1, scanEndedCB);
     }
 };
@@ -542,7 +551,7 @@ bool BLEMIDI_Client_ESP32<_Settings>::connect()
 
     if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS)
     {
-        Serial.println("Max clients reached - no more connections available");
+        DEBUGCLIENT("Max clients reached - no more connections available");
         return false;
     }
 
@@ -561,29 +570,24 @@ bool BLEMIDI_Client_ESP32<_Settings>::connect()
         /** Created a client but failed to connect, don't need to keep it as it has no data */
         NimBLEDevice::deleteClient(_client);
         _client = nullptr;
-        //Serial.println("Failed to connect, deleted client");
+        DEBUGCLIENT("Failed to connect, deleted client");
         return false;
     }
 
     if (!_client->isConnected())
     {
-        //Serial.println("Failed to connect");
+        DEBUGCLIENT("Failed to connect");
         _client->disconnect();
         NimBLEDevice::deleteClient(_client);
         _client = nullptr;
         return false;
     }
 
-    Serial.print("Connected to: ");
-    Serial.print(myAdvCB.advDevice.getName().c_str());
-    Serial.print(" / ");
-    Serial.println(_client->getPeerAddress().toString().c_str());
+    DEBUGCLIENT("Connected to: " + myAdvCB.advDevice.getName().c_str() + " / " + _client->getPeerAddress().toString().c_str());
 
-    /*
-    Serial.print("RSSI: ");
-    Serial.println(_client->getRssi());
-    */
-
+    DEBUGCLIENT("RSSI: ");
+    DEBUGCLIENT(_client->getRssi());
+    
     /** Now we can read/write/subscribe the charateristics of the services we are interested in */
     pSvc = _client->getService(SERVICE_UUID);
     if (pSvc) /** make sure it's not null */
@@ -613,7 +617,7 @@ bool BLEMIDI_Client_ESP32<_Settings>::connect()
 /** Callback to process the results of the last scan or restart it */
 void scanEndedCB(NimBLEScanResults results)
 {
-    // Serial.println("Scan Ended");
+    DEBUGCLIENT("Scan Ended");
 }
 
 END_BLEMIDI_NAMESPACE
