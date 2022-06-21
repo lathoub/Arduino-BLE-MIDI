@@ -33,15 +33,18 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
     /*
     ##### BLE DEVICE NAME  #####
     */
+
     /**
      * Set name of ble device (not affect to connection with server)
      * max 16 characters
      */
-    static constexpr char *name = "BleMidiClient"; 
-                                                   
+    static constexpr char *name = "BleMidiClient";
+
+
     /*
     ###### TX POWER #####
     */
+
     /**
      * Set power transmision
      *
@@ -56,9 +59,11 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      */
     static const esp_power_level_t clientTXPwr = ESP_PWR_LVL_P9;
 
+
     /*
     ###### SECURITY #####
     */
+
     /** Set the IO capabilities of the device, each option will trigger a different pairing method.
      *  BLE_HS_IO_KEYBOARD_ONLY   - Passkey pairing
      *  BLE_HS_IO_DISPLAY_YESNO   - Numeric comparison pairing
@@ -83,9 +88,11 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      */
     static constexpr PasskeyRequestCallback userOnPassKeyRequest = defautlPasskeyRequest;
 
+
     /*
     ###### BLE COMMUNICATION PARAMS ######
     */
+
     /** Set connection parameters:
      *  If you only use one connection, put recomended BLE server param communication
      *  (you may scan it ussing "nRF Connect" app or other similar apps).
@@ -104,6 +111,7 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
     static const uint16_t commLatency = 0;      //
     static const uint16_t commTimeOut = 200;    // 2000ms
 
+
     /*
     ###### BLE FORCE NEW CONNECTION ######
     */
@@ -117,7 +125,6 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      */
     static const bool forceNewConnection = false;
 };
-
 
 /** Define a class to handle the callbacks when advertisments are received */
 class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
@@ -275,15 +282,15 @@ protected:
 
     uint32_t onPassKeyRequest()
     {
-        //if (nullptr != _Settings::userOnPassKeyRequest)
-            return _Settings::userOnPassKeyRequest();
-        //return 0;
+        // if (nullptr != _Settings::userOnPassKeyRequest)
+        return _Settings::userOnPassKeyRequest();
+        // return 0;
     };
 
     void onConnect(BLEClient *pClient)
     {
         DEBUGCLIENT("##Connected##");
-        //pClient->updateConnParams(_Settings::commMinInterval, _Settings::commMaxInterval, _Settings::commLatency, _Settings::commTimeOut);
+        // pClient->updateConnParams(_Settings::commMinInterval, _Settings::commMaxInterval, _Settings::commLatency, _Settings::commTimeOut);
         vTaskDelay(1);
         if (_bluetoothEsp32)
             _bluetoothEsp32->connected();
@@ -299,18 +306,18 @@ protected:
             _bluetoothEsp32->disconnected();
         }
 
-if (_Settings::forceNewConnection)
-{
-        // Renew Client
-        NimBLEDevice::deleteClient(pClient);
-        pClient = nullptr;
-}       
+        if (_Settings::forceNewConnection)
+        {
+            // Renew Client
+            NimBLEDevice::deleteClient(pClient);
+            pClient = nullptr;
+        }
 
         // Try reconnection or search a new one
         NimBLEDevice::getScan()->start(1, scanEndedCB);
     }
 
-   bool onConnParamsUpdateRequest(NimBLEClient *pClient, const ble_gap_upd_params *params)
+    bool onConnParamsUpdateRequest(NimBLEClient *pClient, const ble_gap_upd_params *params)
     {
         if (params->itvl_min < _Settings::commMinInterval)
         { /** 1.25ms units */
@@ -346,24 +353,23 @@ bool BLEMIDI_Client_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
     _bleMidiTransport = bleMidiTransport;
 
     std::string strDeviceName(deviceName);
-    if (strDeviceName == "") // Connect to the first midi server found
+    // Connect to the first midi server found
+    if (strDeviceName == "")
     {
         myAdvCB.specificTarget = false;
         myAdvCB.nameTarget = "";
     }
-    else // Connect to a specific name or address
+    // Connect to a specific name or address
+    else
     {
         myAdvCB.specificTarget = true;
         myAdvCB.nameTarget = strDeviceName;
     }
 
-    static char array[16] = "patata";
-
+    static char array[16];
     memcpy(array, _Settings::name, 16);
     strDeviceName = array;
-
     DEBUGCLIENT(strDeviceName.c_str());
-
     NimBLEDevice::init(strDeviceName);
 
     // To communicate between the 2 cores.
@@ -390,7 +396,8 @@ bool BLEMIDI_Client_ESP32<_Settings>::available(byte *pvBuffer)
         return false;
     }
 
-    if (_client == nullptr || !_client->isConnected()) // Try to connect/reconnect
+    // Try to connect/reconnect
+    if (_client == nullptr || !_client->isConnected()) 
     {
         if (myAdvCB.doConnect)
         {
@@ -445,42 +452,41 @@ bool BLEMIDI_Client_ESP32<_Settings>::connect()
 {
     using namespace std::placeholders; //<- for bind funtion in callback notification
 
-//Retry to connecto to last one
-if (!_Settings::forceNewConnection)
-{
-    /** Check if we have a client we should reuse first
-     *  Special case when we already know this device
-     *  This saves considerable time and power.
-     */
-
-    if (_client)
+    // Retry to connecto to last one
+    if (!_Settings::forceNewConnection)
     {
-        if (_client == NimBLEDevice::getClientByPeerAddress(myAdvCB.advDevice.getAddress()))
+        /** Check if we have a client we should reuse first
+         *  Special case when we already know this device
+         *  This saves considerable time and power.
+         */
+
+        if (_client)
         {
-            if (_client->connect(&myAdvCB.advDevice, false))
+            if (_client == NimBLEDevice::getClientByPeerAddress(myAdvCB.advDevice.getAddress()))
             {
-                if (_characteristic->canNotify())
+                if (_client->connect(&myAdvCB.advDevice, false))
                 {
-                    if (_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
+                    if (_characteristic->canNotify())
                     {
-                        // Re-connection SUCCESS
-                        return true;
+                        if (_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
+                        {
+                            // Re-connection SUCCESS
+                            return true;
+                        }
                     }
+                    /** Disconnect if subscribe failed */
+                    _client->disconnect();
                 }
-                /** Disconnect if subscribe failed */
-                _client->disconnect();
+                /* If any connection problem exits, delete previous client and try again in the next attemp as new client*/
+                NimBLEDevice::deleteClient(_client);
+                _client = nullptr;
+                return false;
             }
-            /* If any connection problem exits, delete previous client and try again in the next attemp as new client*/
+            /*If client does not match, delete previous client and create a new one*/
             NimBLEDevice::deleteClient(_client);
             _client = nullptr;
-            return false;
         }
-        /*If client does not match, delete previous client and create a new one*/
-        NimBLEDevice::deleteClient(_client);
-        _client = nullptr;
     }
-}
-
 
     if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS)
     {
@@ -493,7 +499,7 @@ if (!_Settings::forceNewConnection)
 
     _client->setClientCallbacks(new MyClientCallbacks<_Settings>(this), false);
 
-    _client->setConnectionParams(_Settings::commMinInterval,_Settings::commMaxInterval, _Settings::commLatency, _Settings::commTimeOut);
+    _client->setConnectionParams(_Settings::commMinInterval, _Settings::commMaxInterval, _Settings::commLatency, _Settings::commTimeOut);
 
     /** Set how long we are willing to wait for the connection to complete (seconds), default is 30. */
     _client->setConnectTimeout(15);
@@ -517,7 +523,7 @@ if (!_Settings::forceNewConnection)
     }
 
     DEBUGCLIENT("Connected to: " + myAdvCB.advDevice.getName().c_str() + " / " + _client->getPeerAddress().toString().c_str());
-  
+
     DEBUGCLIENT("RSSI: ");
     DEBUGCLIENT(_client->getRssi());
 
