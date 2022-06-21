@@ -196,32 +196,34 @@ public:
 protected:
     void onResult(NimBLEAdvertisedDevice *advertisedDevice)
     {
-        if (enableConnection) //not begin() or end()
+        if (!enableConnection) // not begin() or end()
         {
-            DEBUGCLIENT("Advertised Device found: ");
-            DEBUGCLIENT(advertisedDevice->toString().c_str());
-            if (advertisedDevice->isAdvertisingService(NimBLEUUID(SERVICE_UUID)))
-            {
-                DEBUGCLIENT("Found MIDI Service");
-                if (!specificTarget || (advertisedDevice->getName() == nameTarget.c_str() || advertisedDevice->getAddress() == nameTarget))
-                {
-                    /** Ready to connect now */
-                    doConnect = true;
-                    /** Save the device reference in a public variable that the client can use*/
-                    advDevice = *advertisedDevice;
-                    /** stop scan before connecting */
-                    NimBLEDevice::getScan()->stop();
-                }
-                else
-                {
-                    DEBUGCLIENT("Name error");
-                }
-            }
-            else
-            {
-                doConnect = false;
-            }
+            return;
         }
+
+        DEBUGCLIENT("Advertised Device found: ");
+        DEBUGCLIENT(advertisedDevice->toString().c_str());
+        if (!advertisedDevice->isAdvertisingService(NimBLEUUID(SERVICE_UUID)))
+        {
+            doConnect = false;
+            return;
+        }
+
+        DEBUGCLIENT("Found MIDI Service");
+        if (!(!specificTarget || (advertisedDevice->getName() == nameTarget.c_str() || advertisedDevice->getAddress() == nameTarget)))
+        {
+            DEBUGCLIENT("Name error");
+            return;
+        }
+
+        /** Ready to connect now */
+        doConnect = true;
+        /** Save the device reference in a public variable that the client can use*/
+        advDevice = *advertisedDevice;
+        /** stop scan before connecting */
+        NimBLEDevice::getScan()->stop();
+
+        return;
     };
 };
 
