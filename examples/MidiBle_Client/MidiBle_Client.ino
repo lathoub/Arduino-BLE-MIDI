@@ -14,10 +14,10 @@
  * the name of the server or the BLE address of the server. If you want to connect 
  * to the first MIDI server BLE found by the device, you just have to set the name field empty ("").
  * 
- * FOR ADVANCED USERS: Other advanced BLE configurations can be changed in hardware/BLEMIDI_Client_ESP32.h
- * #defines in the head of the file (IMPORTANT: Only the first user defines must be modified). These configurations
- * are related to security (password, pairing and securityCallback()), communication params, the device name 
- * and other stuffs. Modify defines at your own risk.
+ * FOR ADVANCED USERS: Other advanced BLE configurations can be changed with a struct that heritate 
+ * from BLEMIDI_NAMESPACE::DefaultSettingsClient. These configurations are related to
+ * security (password, pairing and securityCallback()), communication params, the device name 
+ * and other stuffs. Modify those settings at your own risk.
  * 
  * 
  * 
