@@ -256,7 +256,7 @@ public:
         _client->disconnect();
         _client = nullptr;
 
-        return !_client->isConnected();
+        return true;
     }
 
     void write(uint8_t *data, uint8_t length)
