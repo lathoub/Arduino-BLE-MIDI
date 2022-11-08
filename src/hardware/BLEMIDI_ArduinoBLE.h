@@ -67,6 +67,8 @@ private:
 
     Fifo<byte, _Settings::MaxBufferSize> mRxBuffer;
 
+    template <class> friend class MyServerCallbacks;
+
 public:
     BLEMIDI_ArduinoBLE() : _midiService(SERVICE_UUID),
                            _midiChar(CHARACTERISTIC_UUID, BLERead | BLEWrite | BLENotify | BLEWriteWithoutResponse, _Settings::MaxBufferSize)
@@ -93,8 +95,6 @@ public:
             return true;
         }
 
-        poll();
-
         if (_midiChar.written())
         {
             auto length = _midiChar.valueLength();
@@ -120,54 +120,69 @@ protected:
             _bleMidiTransport->receive((uint8_t *)buffer, length);
     }
 
-    bool poll()
+    void connected()
     {
-        BLEDevice central = BLE.central();
-        if (!central)
-        {
-            if (_central)
-            {
-                onDisconnected(*_central);
-                _central = nullptr;
-            }
-            return false;
-        }
-
-        if (!central.connected())
-            return false;
-
-        if (nullptr == _central)
-        {
-            onConnected(central);
-            _central = &central;
-        }
-        else
-        {
-            if (*_central != central)
-            {
-                onDisconnected(*_central);
-                onConnected(central);
-                _central = &central;
-            }
-        }
-
-        return true;
-    }
-
-    void onConnected(BLEDevice central)
-    {
-        _central = &central;
-
         if (_bleMidiTransport->_connectedCallback)
             _bleMidiTransport->_connectedCallback();
     }
 
-    void onDisconnected(BLEDevice central)
+    void disconnected()
     {
         if (_bleMidiTransport->_disconnectedCallback)
             _bleMidiTransport->_disconnectedCallback();
 
-        _central = nullptr;
+        end();
+    }
+};
+
+template <class _Settings>
+class MyServerCallbacks : public BLEDeviceCallbacks
+{
+public:
+    MyServerCallbacks(BLEMIDI_ArduinoBLE<_Settings> *bluetooth)
+        : _bluetooth(bluetooth)
+    {
+    }
+
+protected:
+    BLEMIDI_ArduinoBLE<_Settings> *_bluetooth = nullptr;
+
+    void onConnect(BLEDevice device)
+    {
+        if (_bluetooth)
+            _bluetooth->connected();
+    };
+
+    void onDisconnect(BLEDevice device)
+    {
+        if (_bluetooth)
+            _bluetooth->disconnected();
+    }
+};
+
+template <class _Settings>
+class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
+{
+public:
+    MyCharacteristicCallbacks(BLEMIDI_ArduinoBLE<_Settings> *bluetooth)
+        : _bluetooth(bluetooth)
+    {
+    }
+
+protected:
+    BLEMIDI_ArduinoBLE<_Settings> *_bluetooth = nullptr;
+
+    void onWrite(BLECharacteristic characteristic)
+    {
+    //    std::string rxValue = characteristic->getValue();
+   //     if (rxValue.length() > 0)
+     //   {
+       //     _bluetooth->receive((uint8_t *)(rxValue.c_str()), rxValue.length());
+        //}
+    }
+
+    void onRead(BLECharacteristic characteristic)
+    {
     }
 };
 
@@ -186,9 +201,13 @@ bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Transp
     _midiService.addCharacteristic(_midiChar);
     BLE.addService(_midiService);
 
+    BLE.setCallbacks(new MyServerCallbacks<_Settings>(this));
+
+    _midiChar.setCallbacks(new MyCharacteristicCallbacks<_Settings>(this));
+
     // set the initial value for the characeristic:
     // (when not set, the device will disconnect after 0.5 seconds)
-    _midiChar.writeValue((uint8_t)0);
+    _midiChar.writeValue((uint8_t)0); // TODO: might not be needed, check!!
 
     /* Start advertising BLE.  It will start continuously transmitting BLE
        advertising packets and will be visible to remote BLE central devices
