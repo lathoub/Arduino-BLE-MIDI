@@ -40,7 +40,6 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      */
     static constexpr char *name = "BleMidiClient";
 
-
     /*
     ###### TX POWER #####
     */
@@ -58,7 +57,6 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      * ESP_PWR_LVL_P9                 // Corresponding to  +9dbm    Maximum
      */
     static const esp_power_level_t clientTXPwr = ESP_PWR_LVL_P9;
-
 
     /*
     ###### SECURITY #####
@@ -88,7 +86,6 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      */
     static constexpr PasskeyRequestCallback userOnPassKeyRequest = defautlPasskeyRequest;
 
-
     /*
     ###### BLE COMMUNICATION PARAMS ######
     */
@@ -111,7 +108,6 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
     static const uint16_t commLatency = 0;      //
     static const uint16_t commTimeOut = 200;    // 2000ms
 
-
     /*
     ###### BLE FORCE NEW CONNECTION ######
     */
@@ -124,6 +120,21 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      *
      */
     static const bool forceNewConnection = false;
+
+    /*
+    ###### BLE SUBSCRIPTION: NOTIFICATION & RESPONSE ######
+    */
+
+    /**
+     * Subscribe in Notification Mode [true] or Indication Mode [false]
+     * Don't modify this parameter except is completely necessary.
+     */
+    static const bool notification = true;
+    /**
+     * Respond to after a notification message.
+     * Don't modify this parameter except is completely necessary.
+     */
+    static const bool response = true;
 };
 
 /** Define a class to handle the callbacks when advertisments are received */
@@ -206,9 +217,11 @@ public:
         myAdvCB.enableConnection = false;
         xQueueReset(mRxQueue);
         _client->disconnect();
-        _client = nullptr;
+        bool success = !_client->isConnected();
+        if (success)
+            _client = nullptr;
 
-        return !_client->isConnected();
+        return success;
     }
 
     void write(uint8_t *data, uint8_t length)
@@ -397,7 +410,7 @@ bool BLEMIDI_Client_ESP32<_Settings>::available(byte *pvBuffer)
     }
 
     // Try to connect/reconnect
-    if (_client == nullptr || !_client->isConnected()) 
+    if (_client == nullptr || !_client->isConnected())
     {
         if (myAdvCB.doConnect)
         {
@@ -468,7 +481,7 @@ bool BLEMIDI_Client_ESP32<_Settings>::connect()
                 {
                     if (_characteristic->canNotify())
                     {
-                        if (_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
+                        if (_characteristic->subscribe(_Settings::notification, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4), _Settings::response))
                         {
                             // Re-connection SUCCESS
                             return true;
@@ -537,7 +550,7 @@ bool BLEMIDI_Client_ESP32<_Settings>::connect()
         {
             if (_characteristic->canNotify())
             {
-                if (_characteristic->subscribe(true, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4)))
+                if (_characteristic->subscribe(_Settings::notification, std::bind(&BLEMIDI_Client_ESP32::notifyCB, this, _1, _2, _3, _4), _Settings::response))
                 {
                     // Connection SUCCESS
                     return true;
