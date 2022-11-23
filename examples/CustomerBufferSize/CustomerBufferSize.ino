@@ -8,6 +8,10 @@
 //#include <hardware/BLEMIDI_ESP32.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+
 BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-NimBLE-MIDI", MIDI, CustomBufferSizeSettings);
 
 unsigned long t0 = millis();
