@@ -58,5 +58,6 @@ for f in **/*.ino ; do
      echo $d
      cd $d
      arduino-cli compile -b esp32:esp32:esp32 *.ino 
+     arduino-cli compile --clean
      cd $dR
 done
