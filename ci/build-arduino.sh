@@ -54,7 +54,8 @@ dR=$(pwd)
 # Compile all *.ino files for the Arduino Uno
 for f in **/*.ino ; do
      echo "Project: $f"
-     d=$(dirname $f)
+     d=$(dirname $(readlink -f $f))
+     echo $d
      cd $d
      arduino-cli compile -b esp32:esp32:esp32 $f 
      cd $dR
