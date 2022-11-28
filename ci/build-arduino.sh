@@ -49,12 +49,12 @@ arduino-cli lib install NimBLE-Arduino
 #     arduino-cli compile -b arduino:esp8266:??? $f
 # done
 
-dR = $(pwd)
+dR=$(pwd)
 
 # Compile all *.ino files for the Arduino Uno
 for f in **/*.ino ; do
      echo "Project: $f"
-     d =$(dirname $f)
+     d=$(dirname $f)
      cd $d
      arduino-cli compile -b esp32:esp32:esp32 $f 
      cd $dR
