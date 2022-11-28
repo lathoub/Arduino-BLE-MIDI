@@ -33,6 +33,10 @@
 //#include <hardware/BLEMIDI_ESP32.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+
 //See DefaultSettingsClient in hardware/BLEMIDI_Client_ESP32.h for more configurable settings
 // If you do not redefine a parameter, it will use the default value for these parameter
 struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::DefaultSettingsClient {
