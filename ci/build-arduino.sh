@@ -57,7 +57,6 @@ for f in **/*.ino ; do
      d=$(dirname $(readlink -f $f))
      echo $d
      cd $d
-     arduino-cli compile -b esp32:esp32:esp32 *.ino 
-     arduino-cli compile --clean
+     arduino-cli compile -b esp32:esp32:esp32 *.ino --clean
      cd $dR
 done
