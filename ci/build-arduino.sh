@@ -53,5 +53,5 @@ arduino-cli lib install NimBLE-Arduino
 for f in **/*.ino ; do
      echo "Project $f"
      arduino-cli compile -b esp32:esp32:esp32 $f 
-     arduino-cli complile --clean
+     arduino-cli compile --clean
 done
