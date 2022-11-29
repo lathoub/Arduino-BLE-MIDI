@@ -49,6 +49,7 @@ static uint32_t customPasskeyRequest()
   //static const bool response = true;
   /*
   ###### AND THE OTHER SETTINGS OF MIDI LIBRARY ######
+  */
   static const size_t MaxBufferSize = 16;
   
 };
