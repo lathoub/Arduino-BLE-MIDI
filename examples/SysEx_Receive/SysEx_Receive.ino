@@ -4,6 +4,10 @@
 #include <hardware/BLEMIDI_ESP32.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+
 BLEMIDI_CREATE_INSTANCE("CustomName", MIDI)
 
 bool isConnected = false;

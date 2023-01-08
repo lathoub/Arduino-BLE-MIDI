@@ -256,10 +256,10 @@ public:
         byte headerByte = buffer[lPtr++];
 
         auto timestampHigh = 0x3f & headerByte;
-
+        timestampHigh = timestampHigh; // <-- This line is for avoid Warning message due it is unused
         byte timestampByte = buffer[lPtr++];
         uint16_t timestamp = 0;
-
+        timestamp = timestamp; // <-- This line is for avoid Warning message due it is unused
         bool sysExContinuation = false;
         bool runningStatusContinuation = false;
 
