@@ -120,6 +120,27 @@ bool BLEMIDI_ESP32_NimBLE::begin(const char *deviceName, BLEMIDI_Transport<class
 
     BLEDevice::init(deviceName);
 
+    /**
+     * Set the IO capabilities of the device, each option will trigger a different pairing method.
+     *  BLE_HS_IO_DISPLAY_ONLY    - Passkey pairing
+     *  BLE_HS_IO_DISPLAY_YESNO   - Numeric comparison pairing
+     *  BLE_HS_IO_NO_INPUT_OUTPUT - DEFAULT setting - just works pairing
+     */
+    // NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY); // use passkey
+    // NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_YESNO); //use numeric comparison
+
+    /**
+     *  2 different ways to set security - both calls achieve the same result.
+     *  no bonding, no man in the middle protection, BLE secure connections.
+     *
+     *  These are the default values, only shown here for demonstration.
+     */
+    // NimBLEDevice::setSecurityAuth(false, false, true);
+
+//    NimBLEDevice::setSecurityAuth(/*BLE_SM_PAIR_AUTHREQ_BOND | BLE_SM_PAIR_AUTHREQ_MITM |*/ BLE_SM_PAIR_AUTHREQ_SC);
+
+    NimBLEDevice::setSecurityAuth(true, false, false);
+
     // To communicate between the 2 cores.
     // Core_0 runs here, core_1 runs the BLE stack
     mRxQueue = xQueueCreate(64, sizeof(uint8_t)); // TODO Settings::MaxBufferSize
@@ -140,9 +161,6 @@ bool BLEMIDI_ESP32_NimBLE::begin(const char *deviceName, BLEMIDI_Transport<class
             NIMBLE_PROPERTY::WRITE_NR);
 
     _characteristic->setCallbacks(new MyCharacteristicCallbacks(this));
-
-    auto _security = new NimBLESecurity();
-    _security->setAuthenticationMode(ESP_LE_AUTH_BOND);
 
     // Start the service
     service->start();
