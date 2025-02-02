@@ -196,6 +196,8 @@ private:
     BLERemoteService *pSvc = nullptr;
     bool firstTimeSend = true; // First writeValue get sends like Write with reponse for clean security flags. After first time, all messages are send like WriteNoResponse for increase transmision speed.
 
+    char connectedDeviceName[24];
+
     BLEMIDI_Transport<class BLEMIDI_Client_ESP32<_Settings>, _Settings> *_bleMidiTransport = nullptr;
 
     bool specificTarget = false;
@@ -217,11 +219,9 @@ public:
         myAdvCB.enableConnection = false;
         xQueueReset(mRxQueue);
         _client->disconnect();
-        bool success = !_client->isConnected();
-        if (success)
-            _client = nullptr;
+        _client = nullptr;
 
-        return success;
+        return true;
     }
 
     void write(uint8_t *data, uint8_t length)
@@ -270,6 +270,13 @@ public:
         if (_bleMidiTransport->_connectedCallback)
             _bleMidiTransport->_connectedCallback();
         firstTimeSend = true;
+
+        if (_bleMidiTransport->_connectedCallbackDeviceName)
+        {
+            sprintf(connectedDeviceName, "%s", myAdvCB.advDevice.getName().c_str());
+            _bleMidiTransport->_connectedCallbackDeviceName(connectedDeviceName);
+        }
+
     }
 
     void disconnected()
