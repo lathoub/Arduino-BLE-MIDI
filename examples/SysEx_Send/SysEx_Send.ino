@@ -4,6 +4,10 @@
 //#include <hardware/BLEMIDI_ESP32.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+
 byte sysex4[]  = { 0xF0, 0x43, 0x20, 0xF7 };
 byte sysex5[]  = { 0xF0, 0x43, 0x20, 0x7E, 0xF7 };
 byte sysex6[]  = { 0xF0, 0x43, 0x20, 0x7E, 0x4C, 0xF7 };
