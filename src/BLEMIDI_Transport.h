@@ -26,13 +26,11 @@ static const char *const CHARACTERISTIC_UUID = "7772e5db-3868-4112-a1a9-f2669d10
 template <class T, class _Settings = DefaultSettings>
 class BLEMIDI_Transport
 {
-    typedef _Settings Settings;
-
 private:
-    byte mRxBuffer[Settings::MaxBufferSize];
+    byte mRxBuffer[_Settings::MaxBufferSize];
     unsigned mRxIndex = 0;
 
-    byte mTxBuffer[Settings::MaxBufferSize]; // minimum 5 bytes
+    byte mTxBuffer[_Settings::MaxBufferSize]; // minimum 5 bytes
     unsigned mTxIndex = 0;
 
     char mDeviceName[24];
@@ -187,6 +185,7 @@ public:
     void (*_connectedCallback)() = nullptr;
     void (*_connectedCallbackDeviceName)(char *) = nullptr;
     void (*_disconnectedCallback)() = nullptr;
+    void (*_connectedCallbackDeviceName)(char *) = nullptr;
 
     BLEMIDI_Transport &setName(const char *deviceName)
     {
@@ -207,6 +206,12 @@ public:
         return *this;
     }
 
+    BLEMIDI_Transport &setHandleConnected(void (*fptr)(char*))
+    {
+        _connectedCallbackDeviceName= fptr;
+        return *this;
+    }
+    
     BLEMIDI_Transport &setHandleDisconnected(void (*fptr)())
     {
         _disconnectedCallback = fptr;
@@ -265,10 +270,10 @@ public:
         byte headerByte = buffer[lPtr++];
 
         auto timestampHigh = 0x3f & headerByte;
-
+        timestampHigh = timestampHigh; // <-- This line is for avoid Warning message due it is unused
         byte timestampByte = buffer[lPtr++];
         uint16_t timestamp = 0;
-
+        timestamp = timestamp; // <-- This line is for avoid Warning message due it is unused
         bool sysExContinuation = false;
         bool runningStatusContinuation = false;
 

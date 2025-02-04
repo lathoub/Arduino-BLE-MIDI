@@ -14,10 +14,10 @@
  * the name of the server or the BLE address of the server. If you want to connect 
  * to the first MIDI server BLE found by the device, you just have to set the name field empty ("").
  * 
- * FOR ADVANCED USERS: Other advanced BLE configurations can be changed in hardware/BLEMIDI_Client_ESP32.h
- * #defines in the head of the file (IMPORTANT: Only the first user defines must be modified). These configurations
- * are related to security (password, pairing and securityCallback()), communication params, the device name 
- * and other stuffs. Modify defines at your own risk.
+ * FOR ADVANCED USERS: Other advanced BLE configurations can be changed with a struct that heritate 
+ * from BLEMIDI_NAMESPACE::DefaultSettingsClient. These configurations are related to
+ * security (password, pairing and securityCallback()), communication params, the device name 
+ * and other stuffs. Modify those settings at your own risk.
  * 
  * 
  * 
@@ -29,17 +29,25 @@
 #include <BLEMIDI_Transport.h>
 
 #include <hardware/BLEMIDI_Client_ESP32.h>
-
 //#include <hardware/BLEMIDI_ESP32_NimBLE.h>
 //#include <hardware/BLEMIDI_ESP32.h>
-//#include <hardware/BLEMIDI_nRF52.h>
 //#include <hardware/BLEMIDI_ArduinoBLE.h>
 
-BLEMIDI_CREATE_DEFAULT_INSTANCE(); //Connect to first server found
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
 
-//BLEMIDI_CREATE_INSTANCE("",MIDI)                  //Connect to the first server found
-//BLEMIDI_CREATE_INSTANCE("f2:c1:d9:36:e7:6b",MIDI) //Connect to a specific BLE address server
-//BLEMIDI_CREATE_INSTANCE("MyBLEserver",MIDI)       //Connect to a specific name server
+//See DefaultSettingsClient in hardware/BLEMIDI_Client_ESP32.h for more configurable settings
+// If you do not redefine a parameter, it will use the default value for these parameter
+struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::DefaultSettingsClient {
+   static const size_t MaxBufferSize = 16;
+};
+
+BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-BLE-MIDI", MIDI, CustomBufferSizeSettings); // Connect to a server named "Esp32-BLE-MIDI" and use CustomBufferSizeSettings as settings of client
+
+//BLEMIDI_CREATE_INSTANCE("",MIDI)                  //Connect to the first server found, using default settings
+//BLEMIDI_CREATE_INSTANCE("f2:c1:d9:36:e7:6b",MIDI) //Connect to a specific BLE address server, using default settings
+//BLEMIDI_CREATE_INSTANCE("MyBLEserver",MIDI)       //Connect to a specific name server, using default settings
 
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 2 //modify for match with yout board
