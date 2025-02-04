@@ -166,9 +166,6 @@ bool BLEMIDI_ESP32_NimBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
 
     _characteristic->setCallbacks(new MyCharacteristicCallbacks<_Settings>(this));
 
-//    auto _security = new NimBLESecurity();
-//    _security->setAuthenticationMode(ESP_LE_AUTH_BOND);
-
     // Start the service
     service->start();
 

@@ -2,11 +2,17 @@
 
 #include <ArduinoBLE.h>
 
+#define BLE_POLLING
+
 BEGIN_BLEMIDI_NAMESPACE
 
-template <typename T, short rawSize>
-class Fifo
-{
+BLEService midiService(SERVICE_UUID);
+
+BLEStringCharacteristic midiChar(CHARACTERISTIC_UUID,  // standard 16-bit characteristic UUID
+    BLERead | BLEWrite | BLENotify | BLEWriteWithoutResponse, 16); // remote clients will be able to get notifications if this characteristic changes
+
+template<typename T, int rawSize>
+class Fifo {
 public:
     const size_t size; // speculative feature, in case it's needed
 
@@ -226,7 +232,7 @@ bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Transp
 /*! \brief Create an instance for ArduinoBLE <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-    BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, BLEMIDI_NAMESPACE::DefaultSettings)
+    BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, BLEMIDI_NAMESPACE::DefaultSettings);
 
 /*! \brief Create a default instance for ArduinoBLE named BLE-MIDI
  */

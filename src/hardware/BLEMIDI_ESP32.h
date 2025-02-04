@@ -6,6 +6,9 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
+// Note: error: redefinition of 'class BLEDescriptor' is a namespace collision on class BLEDescriptor between our ESp32 BLE and ArduinoBLE
+// Solution: remove ArduinoBLE
+
 BEGIN_BLEMIDI_NAMESPACE
 
 template <class _Settings>
@@ -116,7 +119,7 @@ protected:
 
     void onWrite(BLECharacteristic *characteristic)
     {
-        std::string rxValue = characteristic->getValue();
+        auto rxValue = characteristic->getValue();
         if (rxValue.length() > 0)
         {
             _bluetoothEsp32->receive((uint8_t *)(rxValue.c_str()), rxValue.length());
