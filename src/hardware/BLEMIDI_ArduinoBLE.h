@@ -73,12 +73,13 @@ private:
 
     Fifo<byte, _Settings::MaxBufferSize> mRxBuffer;
 
-    template <class> friend class MyServerCallbacks;
+    static BLEMIDI_ArduinoBLE<_Settings>* self;
 
 public:
     BLEMIDI_ArduinoBLE() : _midiService(SERVICE_UUID),
                            _midiChar(CHARACTERISTIC_UUID, BLERead | BLEWrite | BLENotify | BLEWriteWithoutResponse, _Settings::MaxBufferSize)
     {
+        self = this;
     }
 
     bool begin(const char *, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings> *);
@@ -139,58 +140,25 @@ protected:
 
         end();
     }
-};
 
-template <class _Settings>
-class MyServerCallbacks : public BLEDeviceCallbacks
-{
-public:
-    MyServerCallbacks(BLEMIDI_ArduinoBLE<_Settings> *bluetooth)
-        : _bluetooth(bluetooth)
-    {
+    static void blePeripheralConnectedHandler(BLEDevice central) {
+        self->connected();
     }
-
-protected:
-    BLEMIDI_ArduinoBLE<_Settings> *_bluetooth = nullptr;
-
-    void onConnect(BLEDevice device)
-    {
-        if (_bluetooth)
-            _bluetooth->connected();
-    };
-
-    void onDisconnect(BLEDevice device)
-    {
-        if (_bluetooth)
-            _bluetooth->disconnected();
+    
+    static void blePeripheralDisconnectedHandler(BLEDevice central) {
+        self->disconnected();
+    }
+    
+    static void switchCharacteristicWritten(BLEDevice central, BLECharacteristic characteristic) {
+//        std::string rxValue = characteristic->value();
+//        if (rxValue.length() > 0)
+//            receive((uint8_t *)(rxValue.c_str()), rxValue.length());
     }
 };
 
-template <class _Settings>
-class MyCharacteristicCallbacks : public BLECharacteristicCallbacks
-{
-public:
-    MyCharacteristicCallbacks(BLEMIDI_ArduinoBLE<_Settings> *bluetooth)
-        : _bluetooth(bluetooth)
-    {
-    }
-
-protected:
-    BLEMIDI_ArduinoBLE<_Settings> *_bluetooth = nullptr;
-
-    void onWrite(BLECharacteristic characteristic)
-    {
-    //    std::string rxValue = characteristic->getValue();
-   //     if (rxValue.length() > 0)
-     //   {
-       //     _bluetooth->receive((uint8_t *)(rxValue.c_str()), rxValue.length());
-        //}
-    }
-
-    void onRead(BLECharacteristic characteristic)
-    {
-    }
-};
+// this pattern of static to instance variable is limited to 1 instance of ArduinoBLE 
+// for multiple instances, turn this into a vector and lookup
+template <class _Settings> BLEMIDI_ArduinoBLE<_Settings>* BLEMIDI_ArduinoBLE<_Settings>::self;
 
 template <class _Settings>
 bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_ArduinoBLE<_Settings>, _Settings> *bleMidiTransport)
@@ -207,9 +175,10 @@ bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Transp
     _midiService.addCharacteristic(_midiChar);
     BLE.addService(_midiService);
 
-    BLE.setCallbacks(new MyServerCallbacks<_Settings>(this));
+    BLE.setEventHandler(BLEConnected, blePeripheralConnectedHandler);
+    BLE.setEventHandler(BLEDisconnected, blePeripheralDisconnectedHandler);
 
-    _midiChar.setCallbacks(new MyCharacteristicCallbacks<_Settings>(this));
+    _midiChar.setEventHandler(BLEWritten, switchCharacteristicWritten);
 
     // set the initial value for the characeristic:
     // (when not set, the device will disconnect after 0.5 seconds)
@@ -223,6 +192,7 @@ bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Transp
     return true;
 }
 
+  
 /*! \brief Create an instance for ArduinoBLE <DeviceName>
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings)                                                          \
