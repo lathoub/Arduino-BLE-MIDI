@@ -31,6 +31,10 @@ void loop()
 ```
 will create a instance named `BLEMIDI` and listens to incoming MIDI.
 
+#### Namespace collision with ArduinoBLE
+Note: error: redefinition of 'class BLEDescriptor' is a namespace collision on class BLEDescriptor between ESP32 BLE and ArduinoBLE.
+Solution: remove ArduinoBLE
+
 ### using NimBLE for ESP32 with a custom name and turns LED on when its connected
 
 ```cpp
