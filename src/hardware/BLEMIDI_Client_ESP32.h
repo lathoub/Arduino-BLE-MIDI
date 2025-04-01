@@ -138,7 +138,7 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
 };
 
 /** Define a class to handle the callbacks when advertisments are received */
-class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
+class AdvertisedDeviceCallbacks : public NimBLEScanCallbacks
 {
 public:
     NimBLEAdvertisedDevice advDevice;
@@ -165,7 +165,7 @@ protected:
         }
 
         DEBUGCLIENT("Found MIDI Service");
-        if (!(!specificTarget || (advertisedDevice->getName() == nameTarget.c_str() || advertisedDevice->getAddress() == nameTarget)))
+        if (!(!specificTarget || (advertisedDevice->getName() == nameTarget.c_str() || advertisedDevice->getAddress().toString() == nameTarget)))
         {
             DEBUGCLIENT("Name error");
             return;
@@ -450,7 +450,7 @@ void BLEMIDI_Client_ESP32<_Settings>::scan()
     NimBLEScan *pBLEScan = BLEDevice::getScan();
     if (!pBLEScan->isScanning())
     {
-        pBLEScan->setAdvertisedDeviceCallbacks(&myAdvCB);
+        pBLEScan->setScanCallbacks(&myAdvCB);
         pBLEScan->setInterval(600);
         pBLEScan->setWindow(500);
         pBLEScan->setActiveScan(true);
@@ -501,7 +501,7 @@ bool BLEMIDI_Client_ESP32<_Settings>::connect()
         }
     }
 
-    if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS)
+    if (NimBLEDevice::getCreatedClientCount() >= NIMBLE_MAX_CONNECTIONS)
     {
         DEBUGCLIENT("Max clients reached - no more connections available");
         return false;
