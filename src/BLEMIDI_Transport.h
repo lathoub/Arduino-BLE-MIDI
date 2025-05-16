@@ -183,7 +183,9 @@ protected:
 public:
     // callbacks
     void (*_connectedCallback)() = nullptr;
+    void (*_connectedCallbackDeviceName)(char *) = nullptr;
     void (*_disconnectedCallback)() = nullptr;
+    void (*_connectedCallbackDeviceName)(char *) = nullptr;
 
     BLEMIDI_Transport &setName(const char *deviceName)
     {
@@ -197,7 +199,19 @@ public:
         _connectedCallback = fptr;
         return *this;
     }
+    
+    BLEMIDI_Transport &setHandleConnected(void (*fptr)(char*))
+    {
+        _connectedCallbackDeviceName= fptr;
+        return *this;
+    }
 
+    BLEMIDI_Transport &setHandleConnected(void (*fptr)(char*))
+    {
+        _connectedCallbackDeviceName= fptr;
+        return *this;
+    }
+    
     BLEMIDI_Transport &setHandleDisconnected(void (*fptr)())
     {
         _disconnectedCallback = fptr;
