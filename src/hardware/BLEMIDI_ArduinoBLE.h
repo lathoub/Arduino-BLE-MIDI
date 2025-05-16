@@ -4,6 +4,12 @@
 
 BEGIN_BLEMIDI_NAMESPACE
 
+// Dependanced class settings
+struct DefaultSettings : public _DefaultSettings
+{
+    //TODO Create parametric configurations
+};
+
 template <typename T, short rawSize>
 class Fifo
 {
@@ -202,7 +208,7 @@ bool BLEMIDI_ArduinoBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Transp
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings)                                                          \
     BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings> BLE##Name(DeviceName); \
-    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings> &)BLE##Name);
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings>, _Settings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ArduinoBLE<_Settings>, _Settings> &)BLE##Name);
 
 /*! \brief Create an instance for ArduinoBLE <DeviceName>
  */

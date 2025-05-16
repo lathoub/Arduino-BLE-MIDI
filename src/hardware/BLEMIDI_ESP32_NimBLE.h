@@ -2,8 +2,16 @@
 
 // Headers for ESP32 NimBLE
 #include <NimBLEDevice.h>
+#include "BLEMIDI_Namespace.h"
+#include <BLEMIDI_Transport.h>
 
 BEGIN_BLEMIDI_NAMESPACE
+
+// Dependanced class settings
+struct DefaultSettings : public _DefaultSettings
+{
+    //TODO Create parametric configurations
+};
 
 template <class _Settings>
 class BLEMIDI_ESP32_NimBLE
@@ -145,9 +153,9 @@ bool BLEMIDI_ESP32_NimBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
 
     _characteristic->setCallbacks(new MyCharacteristicCallbacks<_Settings>(this));
 
-    auto _security = new NimBLESecurity();
-    _security->setAuthenticationMode(ESP_LE_AUTH_BOND);
 
+    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT); // Attention
+   
     // Start the service
     service->start();
 
@@ -164,7 +172,7 @@ bool BLEMIDI_ESP32_NimBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings) \
     BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE<_Settings>, _Settings> BLE##Name(DeviceName); \
-    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE<_Settings>, _Settings> &)BLE##Name);
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE<_Settings>, _Settings>, _Settings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_ESP32_NimBLE<_Settings>, _Settings> &)BLE##Name);
 
 /*! \brief Create an instance for ESP32 named <DeviceName>
  */

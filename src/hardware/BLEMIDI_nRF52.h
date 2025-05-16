@@ -6,6 +6,12 @@
 
 BEGIN_BLEMIDI_NAMESPACE
 
+// Dependanced class settings
+struct DefaultSettings : public _DefaultSettings
+{
+    //TODO Create parametric configurations
+};
+
 template <class _Settings>
 class BLEMIDI_nRF52
 {
@@ -142,7 +148,7 @@ bool BLEMIDI_nRF52<_Settings>::begin(const char* deviceName, BLEMIDI_NAMESPACE::
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings) \
     BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings> BLE##Name(DeviceName); \
-    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings> &)BLE##Name);
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings>, _Settings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_nRF52<_Settings>, _Settings> &)BLE##Name);
 
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */

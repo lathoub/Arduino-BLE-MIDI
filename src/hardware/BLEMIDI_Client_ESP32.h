@@ -10,6 +10,8 @@
 
 // Headers for ESP32 nimBLE
 #include <NimBLEDevice.h>
+#include "BLEMIDI_Namespace.h"
+#include "BLEMIDI_Settings.h"
 
 BEGIN_BLEMIDI_NAMESPACE
 
@@ -27,7 +29,8 @@ static uint32_t defautlPasskeyRequest()
     return passkey;
 };
 
-struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
+// Dependanced class settings
+struct DefaultSettings : public _DefaultSettings
 {
 
     /*
@@ -38,7 +41,7 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      * Set name of ble device (not affect to connection with server)
      * max 16 characters
      */
-    static constexpr char *name = "BleMidiClient";
+    static constexpr char *name = (char*)"BleMidiClient";
 
     /*
     ###### TX POWER #####
@@ -46,26 +49,19 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
 
     /**
      * Set power transmision
-     *
-     * ESP_PWR_LVL_N12                // Corresponding to -12dbm    Minimum
-     * ESP_PWR_LVL_N9                 // Corresponding to  -9dbm
-     * ESP_PWR_LVL_N6                 // Corresponding to  -6dbm
-     * ESP_PWR_LVL_N3                 // Corresponding to  -3dbm
-     * ESP_PWR_LVL_N0                 // Corresponding to   0dbm
-     * ESP_PWR_LVL_P3                 // Corresponding to  +3dbm
-     * ESP_PWR_LVL_P6                 // Corresponding to  +6dbm
-     * ESP_PWR_LVL_P9                 // Corresponding to  +9dbm    Maximum
      */
-    static const esp_power_level_t clientTXPwr = ESP_PWR_LVL_P9;
+    static const uint8_t clientTXPwr = 9; //in dBm
 
     /*
     ###### SECURITY #####
     */
 
     /** Set the IO capabilities of the device, each option will trigger a different pairing method.
-     *  BLE_HS_IO_KEYBOARD_ONLY   - Passkey pairing
-     *  BLE_HS_IO_DISPLAY_YESNO   - Numeric comparison pairing
-     *  BLE_HS_IO_NO_INPUT_OUTPUT - DEFAULT setting - just works pairing
+    * * 0x00 BLE_HS_IO_DISPLAY_ONLY         DisplayOnly IO capability
+    * * 0x01 BLE_HS_IO_DISPLAY_YESNO        DisplayYesNo IO capability
+    * * 0x02 BLE_HS_IO_KEYBOARD_ONLY        KeyboardOnly IO capability
+    * * 0x03 BLE_HS_IO_NO_INPUT_OUTPUT      NoInputNoOutput IO capability
+    * * 0x04 BLE_HS_IO_KEYBOARD_DISPLAY     KeyboardDisplay Only IO capability
      */
     static const uint8_t clientSecurityCapabilities = BLE_HS_IO_NO_INPUT_OUTPUT;
 
@@ -579,7 +575,7 @@ END_BLEMIDI_NAMESPACE
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings)                                                            \
     BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> BLE##Name(DeviceName); \
-    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> &)BLE##Name);
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings>, _Settings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> &)BLE##Name);
 
 /*! \brief Create an instance for ESP32 named <DeviceName>, and advertise it like "Prefix + <DeviceName> + Subfix"
     It will try to connect to a specific server with equal name or addr than <DeviceName>. If <DeviceName> is "", it will connect to first midi server
