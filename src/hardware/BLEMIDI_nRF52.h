@@ -7,7 +7,7 @@
 BEGIN_BLEMIDI_NAMESPACE
 
 // Dependanced class settings
-struct DefaultSettings : public _DefaultSettings
+struct BLEDefaultSettings : public CommonBLEDefaultSettings
 {
     //TODO Create parametric configurations
 };
@@ -153,7 +153,7 @@ bool BLEMIDI_nRF52<_Settings>::begin(const char* deviceName, BLEMIDI_NAMESPACE::
  /*! \brief Create an instance for nRF52 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
-    BLEMIDI_CREATE_CUSTOM_INSTANCE (DeviceName, Name, BLEMIDI_NAMESPACE::DefaultSettings)
+    BLEMIDI_CREATE_CUSTOM_INSTANCE (DeviceName, Name, BLEMIDI_NAMESPACE::BLEDefaultSettings)
 
  /*! \brief Create a default instance for nRF52 named BLE-MIDI
  */

@@ -10,6 +10,7 @@
 
 // Headers for ESP32 nimBLE
 #include <NimBLEDevice.h>
+#include "transport.h"
 #include "BLEMIDI_Namespace.h"
 #include "BLEMIDI_Settings.h"
 
@@ -30,7 +31,7 @@ static uint32_t defautlPasskeyRequest()
 };
 
 // Dependanced class settings
-struct DefaultSettings : public _DefaultSettings
+struct BLEDefaultSettings : public CommonBLEDefaultSettings
 {
 
     /*
@@ -41,7 +42,7 @@ struct DefaultSettings : public _DefaultSettings
      * Set name of ble device (not affect to connection with server)
      * max 16 characters
      */
-    static constexpr char *name = (char*)"BleMidiClient";
+    static constexpr char *clientName = (char*)"BleMidiClient";
 
     /*
     ###### TX POWER #####
@@ -193,7 +194,7 @@ private:
     bool firstTimeSend = true; //First writeValue get sends like Write with reponse for clean security flags. After first time, all messages are send like WriteNoResponse for increase transmision speed.
     char connectedDeviceName[24];
     
-    BLEMIDI_Transport<class BLEMIDI_Client_ESP32> *_bleMidiTransport = nullptr;
+    BLEMIDI_Transport<class BLEMIDI_Client_ESP32, _Settings> *_bleMidiTransport = nullptr;
 
     bool specificTarget = false;
 
@@ -265,12 +266,6 @@ public:
         if (_bleMidiTransport->_connectedCallback)
             _bleMidiTransport->_connectedCallback();
         firstTimeSend = true;
-        
-        if (_bleMidiTransport->_connectedCallbackDeviceName)
-        {
-            sprintf(connectedDeviceName, "%s", myAdvCB.advDevice.getName().c_str());
-            _bleMidiTransport->_connectedCallbackDeviceName(connectedDeviceName);
-        }
     }
 
     void disconnected()
@@ -378,11 +373,15 @@ bool BLEMIDI_Client_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
     {
         myAdvCB.specificTarget = true;
         myAdvCB.nameTarget = strDeviceName;
+        
     }
+    DEBUGCLIENT("Target Server:");
+    DEBUGCLIENT(myAdvCB.nameTarget.c_str());
 
     static char array[16];
-    memcpy(array, _Settings::name, 16);
+    memcpy(array, _Settings::clientName, 16);
     strDeviceName = array;
+    DEBUGCLIENT("ClientName (this device):");
     DEBUGCLIENT(strDeviceName.c_str());
     NimBLEDevice::init(strDeviceName);
 
@@ -575,14 +574,14 @@ void scanEndedCB(NimBLEScanResults results)
 
 END_BLEMIDI_NAMESPACE
 
-/*! \brief Create a custom instance for ESP32 named <DeviceName>, and advertise it like "Prefix + <DeviceName> + Subfix"
+/*! \brief Create a custom instance for ESP32 named <DeviceName>.
     It will try to connect to a specific server with equal name or addr than <DeviceName>. If <DeviceName> is "", it will connect to first midi server
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings)                                                            \
     BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> BLE##Name(DeviceName); \
     MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings>, _Settings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> &)BLE##Name);
 
-/*! \brief Create an instance for ESP32 named <DeviceName>, and advertise it like "Prefix + <DeviceName> + Subfix"
+/*! \brief Create an instance for ESP32 named <DeviceName>.
     It will try to connect to a specific server with equal name or addr than <DeviceName>. If <DeviceName> is "", it will connect to first midi server
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \

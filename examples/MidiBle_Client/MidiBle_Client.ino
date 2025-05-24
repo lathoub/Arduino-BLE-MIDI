@@ -55,7 +55,7 @@ using PasskeyRequestCallback = uint32_t (*)(void);
 
 //See DefaultSettingsClient in hardware/BLEMIDI_Client_ESP32.h for more configurable settings
 // If you do not redefine a parameter, it will use the default value for these parameter
-struct CustomSettings : public BLEMIDI_NAMESPACE::DefaultSettings
+struct CustomSettings : public BLEMIDI_NAMESPACE::BLEDefaultSettings
 {
   //See all options and them explanation in the library.
   

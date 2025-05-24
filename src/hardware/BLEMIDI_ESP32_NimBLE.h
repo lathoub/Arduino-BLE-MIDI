@@ -8,7 +8,7 @@
 BEGIN_BLEMIDI_NAMESPACE
 
 // Dependanced class settings
-struct DefaultSettings : public _DefaultSettings
+struct BLEDefaultSettings : public CommonBLEDefaultSettings
 {
     //TODO Create parametric configurations
 };
@@ -199,7 +199,7 @@ bool BLEMIDI_ESP32_NimBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
 /*! \brief Create an instance for ESP32 named <DeviceName>
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name)  \
-    BLEMIDI_CREATE_CUSTOM_INSTANCE (DeviceName, Name, BLEMIDI_NAMESPACE::DefaultSettings)
+    BLEMIDI_CREATE_CUSTOM_INSTANCE (DeviceName, Name, BLEMIDI_NAMESPACE::BLEDefaultSettings)
 
 /*! \brief Create a default instance for ESP32 named BLE-MIDI
  */

@@ -1,19 +1,19 @@
 #include <BLEMIDI_Transport.h>
 
+//#include <hardware/BLEMIDI_ESP32_NimBLE.h>
+#include <hardware/BLEMIDI_ESP32.h>
+//#include <hardware/BLEMIDI_ArduinoBLE.h>
+//#include <hardware/BLEMIDI_Client_ESP32.h>
+
 //User defined settings
-struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::DefaultSettings {
-  //BLE-MIDI settings (see BLEMIDI_Settings.h and BLE_class for more details)
+struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::BLEDefaultSettings {
+  //BLE-MIDI settings (see BLEMIDI_Settings.h and Hardware/BLE_class for more details)
   static const size_t MaxBufferSize = 16;
 
   //MIDI settings (see MIDI_Settings.h)
   static const int Use1ByteParsing = true;
   static const bool HandleNullVelocityNoteOnAsNoteOff = true; 
 };
-
-#include <hardware/BLEMIDI_ESP32_NimBLE.h>
-//#include <hardware/BLEMIDI_ESP32.h>
-//#include <hardware/BLEMIDI_ArduinoBLE.h>
-//#include <hardware/BLEMIDI_Client_ESP32.h>
 
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 2

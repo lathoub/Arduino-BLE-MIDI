@@ -6,7 +6,7 @@ BEGIN_BLEMIDI_NAMESPACE
 
 //Common settings for all BLEMIDI classes
 //This is the default settings for all BLEMIDI classes
-struct _DefaultSettings : MIDI_NAMESPACE::DefaultSettings
+struct CommonBLEDefaultSettings : MIDI_NAMESPACE::DefaultSettings
 {
     static const short MaxBufferSize = 64;
 };

@@ -1,8 +1,8 @@
 #include <BLEMIDI_Transport.h>
 
 //#include <hardware/BLEMIDI_ESP32_NimBLE.h>
-#include <hardware/BLEMIDI_ESP32.h>
-//#include <hardware/BLEMIDI_ArduinoBLE.h>
+//#include <hardware/BLEMIDI_ESP32.h>
+#include <hardware/BLEMIDI_ArduinoBLE.h>
 
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 2

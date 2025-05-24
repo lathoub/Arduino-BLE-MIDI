@@ -23,7 +23,7 @@ static const char *const CHARACTERISTIC_UUID = "7772e5db-3868-4112-a1a9-f2669d10
 
 #define MIDI_TYPE 0x80
 
-template <class T, class _Settings = DefaultSettings>
+template <class T, class _Settings /*= CommonBLEDefaultSettings*/>
 class BLEMIDI_Transport
 {
 private:
@@ -407,11 +407,6 @@ public:
                 return; //end of packet
         }
     }
-};
-
-struct MySettings : public MIDI_NAMESPACE::DefaultSettings
-{
-    static const bool Use1ByteParsing = false;
 };
 
 END_BLEMIDI_NAMESPACE
