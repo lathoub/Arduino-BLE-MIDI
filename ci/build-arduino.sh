@@ -31,7 +31,7 @@ arduino-cli board listall
 ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/CI_Test_Library
 
 arduino-cli lib install "MIDI library"
-#arduino-cli lib install ArduinoBLE
+arduino-cli lib install ArduinoBLE
 arduino-cli lib install NimBLE-Arduino
 
 # Compile all *.ino files for the Arduino Uno
