@@ -51,7 +51,7 @@ struct BLEDefaultSettings : public CommonBLEDefaultSettings
     /**
      * Set power transmision
      */
-    static const uint8_t clientTXPwr = 9; //in dBm
+    static const uint8_t BLETXPwr = 9; //in dBm
 
     /*
     ###### SECURITY #####
@@ -64,7 +64,7 @@ struct BLEDefaultSettings : public CommonBLEDefaultSettings
     * * 0x03 BLE_HS_IO_NO_INPUT_OUTPUT      NoInputNoOutput IO capability
     * * 0x04 BLE_HS_IO_KEYBOARD_DISPLAY     KeyboardDisplay Only IO capability
      */
-    static const uint8_t clientSecurityCapabilities = BLE_HS_IO_NO_INPUT_OUTPUT;
+    static const uint8_t BLESecurityCapabilities = BLE_HS_IO_NO_INPUT_OUTPUT;
 
     /** Set the security method.
      *  bonding
@@ -73,9 +73,9 @@ struct BLEDefaultSettings : public CommonBLEDefaultSettings
      *
      *  More info in nimBLE lib
      */
-    static const bool clientBond = true;
-    static const bool clientMITM = false;
-    static const bool clientPair = true;
+    static const bool BLEBond = true;
+    static const bool BLEMITM = false;
+    static const bool BLEPair = true;
 
     /**
      * This callback function defines what will be done when server requieres PassKey.
@@ -146,7 +146,7 @@ public:
     std::string nameTarget;
 
 protected:
-    void onResult(NimBLEAdvertisedDevice *advertisedDevice)
+    void onResult(const NimBLEAdvertisedDevice *advertisedDevice)
     {
         if (!enableConnection) // not begin() or end()
         {
@@ -299,7 +299,7 @@ protected:
     void onConnect(BLEClient *pClient)
     {
         DEBUGCLIENT("##Connected##");
-        // pClient->updateConnParams(_Settings::commMinInterval, _Settings::commMaxInterval, _Settings::commLatency, _Settings::commTimeOut);
+        pClient->updateConnParams(_Settings::commMinInterval, _Settings::commMaxInterval, _Settings::commLatency, _Settings::commTimeOut);
         vTaskDelay(1);
         if (_bluetoothEsp32)
             _bluetoothEsp32->connected();
@@ -389,11 +389,11 @@ bool BLEMIDI_Client_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
     // Core_0 runs here, core_1 runs the BLE stack
     mRxQueue = xQueueCreate(_Settings::MaxBufferSize, sizeof(uint8_t));
 
-    NimBLEDevice::setSecurityIOCap(_Settings::clientSecurityCapabilities); // Attention, it may need a passkey
-    NimBLEDevice::setSecurityAuth(_Settings::clientBond, _Settings::clientMITM, _Settings::clientPair);
+    NimBLEDevice::setSecurityIOCap(_Settings::BLESecurityCapabilities); // Attention, it may need a passkey
+    NimBLEDevice::setSecurityAuth(_Settings::BLEBond, _Settings::BLEMITM, _Settings::BLEPair);
 
     /** Optional: set the transmit power, default is 3db */
-    NimBLEDevice::setPower(_Settings::clientTXPwr); /** +9db */
+    NimBLEDevice::setPower(_Settings::BLETXPwr); /** +9db */
 
     myAdvCB.enableConnection = true;
     scan();

@@ -10,7 +10,62 @@ BEGIN_BLEMIDI_NAMESPACE
 // Dependanced class settings
 struct BLEDefaultSettings : public CommonBLEDefaultSettings
 {
-    //TODO Create parametric configurations
+
+    /*
+    ###### TX POWER #####
+    */
+
+    /**
+     * Set power transmision
+     */
+    static const uint8_t BLETXPwr = 9; //in dBm
+
+    /*
+    ###### SECURITY #####
+    */
+
+    /** Set the IO capabilities of the device, each option will trigger a different pairing method.
+    * * 0x00 BLE_HS_IO_DISPLAY_ONLY         DisplayOnly IO capability
+    * * 0x01 BLE_HS_IO_DISPLAY_YESNO        DisplayYesNo IO capability
+    * * 0x02 BLE_HS_IO_KEYBOARD_ONLY        KeyboardOnly IO capability
+    * * 0x03 BLE_HS_IO_NO_INPUT_OUTPUT      NoInputNoOutput IO capability
+    * * 0x04 BLE_HS_IO_KEYBOARD_DISPLAY     KeyboardDisplay Only IO capability
+     */
+    static const uint8_t BLESecurityCapabilities = BLE_HS_IO_NO_INPUT_OUTPUT;
+
+    /** Set the security method.
+     *  bonding
+     *  man in the middle protection
+     *  pair. secure connections
+     *
+     *  More info in nimBLE lib
+     */
+    static const bool BLEBond = true;
+    static const bool BLEMITM = false;
+    static const bool BLEPair = true;
+
+    /*
+    ###### BLE COMMUNICATION PARAMS ######
+    */
+
+    /** Set connection parameters:
+     *  If you only use one connection, put recomended BLE server param communication
+     *  (you may scan it ussing "nRF Connect" app or other similar apps).
+     *
+     *  If you use more than one connection adjust, for example, settings like 15ms interval, 0 latency, 120ms timout.
+     *  These settings may be safe for 3 clients to connect reliably, set faster values if you have less
+     *  connections.
+     *
+     *  Min interval (unit: 1.25ms): 12 * 1.25ms = 15 ms,
+     *  Max interval (unit: 1.25ms): 12 * 1.25ms = 15,
+     *  0 latency (Number of intervals allowed to skip),
+     *  TimeOut (unit: 10ms) 51 * 10ms = 510ms. Timeout should be minimum 100ms.
+     */
+    static const uint16_t commMinInterval = 6;  // 7.5ms
+    static const uint16_t commMaxInterval = 35; // 40ms
+    static const uint16_t commLatency = 0;      //
+    static const uint16_t commTimeOut = 200;    // 2000ms
+
 };
 
 template <class _Settings>
@@ -90,13 +145,13 @@ public:
 protected:
     BLEMIDI_ESP32_NimBLE<_Settings> *_bluetoothEsp32 = nullptr;
 
-    void onConnect(BLEServer *)
+    void onConnect(BLEServer *, NimBLEConnInfo &)
     {
         if (_bluetoothEsp32)
             _bluetoothEsp32->connected();
     };
 
-    void onDisconnect(BLEServer *)
+    void onDisconnect(BLEServer *, NimBLEConnInfo &)
     {
         if (_bluetoothEsp32)
             _bluetoothEsp32->disconnected();
@@ -115,7 +170,7 @@ public:
 protected:
     BLEMIDI_ESP32_NimBLE<_Settings> *_bluetoothEsp32 = nullptr;
 
-    void onWrite(BLECharacteristic *characteristic)
+    void onWrite(BLECharacteristic *characteristic, NimBLEConnInfo &)
     {
         std::string rxValue = characteristic->getValue();
         if (rxValue.length() > 0)
@@ -131,27 +186,11 @@ bool BLEMIDI_ESP32_NimBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
     _bleMidiTransport = bleMidiTransport;
 
     BLEDevice::init(deviceName);
+ 
+    NimBLEDevice::setSecurityIOCap(_Settings::BLESecurityCapabilities); // Attention, it may need a passkey
+    NimBLEDevice::setSecurityAuth(_Settings::BLEBond, _Settings::BLEMITM, _Settings::BLEPair);
 
-    /**
-     * Set the IO capabilities of the device, each option will trigger a different pairing method.
-     *  BLE_HS_IO_DISPLAY_ONLY    - Passkey pairing
-     *  BLE_HS_IO_DISPLAY_YESNO   - Numeric comparison pairing
-     *  BLE_HS_IO_NO_INPUT_OUTPUT - DEFAULT setting - just works pairing
-     */
-    // NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY); // use passkey
-    // NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_YESNO); //use numeric comparison
-
-    /**
-     *  2 different ways to set security - both calls achieve the same result.
-     *  no bonding, no man in the middle protection, BLE secure connections.
-     *
-     *  These are the default values, only shown here for demonstration.
-     */
-    // NimBLEDevice::setSecurityAuth(false, false, true);
-
-//    NimBLEDevice::setSecurityAuth(/*BLE_SM_PAIR_AUTHREQ_BOND | BLE_SM_PAIR_AUTHREQ_MITM |*/ BLE_SM_PAIR_AUTHREQ_SC);
-
-    NimBLEDevice::setSecurityAuth(true, false, false);
+    /** Optional: set the transmit power, default is 3db */    NimBLEDevice::setPower(_Settings::BLETXPwr); /** +9db */
 
     // To communicate between the 2 cores.
     // Core_0 runs here, core_1 runs the BLE stack
@@ -166,8 +205,8 @@ bool BLEMIDI_ESP32_NimBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
 
     // Create a BLE Characteristic
     _characteristic = service->createCharacteristic(
-        BLEUUID(CHARACTERISTIC_UUID),
-        NIMBLE_PROPERTY::READ |
+            BLEUUID(CHARACTERISTIC_UUID),
+            NIMBLE_PROPERTY::READ |
             NIMBLE_PROPERTY::WRITE |
             NIMBLE_PROPERTY::NOTIFY |
             NIMBLE_PROPERTY::WRITE_NR);
@@ -175,8 +214,12 @@ bool BLEMIDI_ESP32_NimBLE<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
     _characteristic->setCallbacks(new MyCharacteristicCallbacks<_Settings>(this));
 
 
-    NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT); // Attention
-   
+    NimBLEDevice::setSecurityIOCap(_Settings::BLESecurityCapabilities); // Attention, it may need a passkey
+    NimBLEDevice::setSecurityAuth(_Settings::BLEBond, _Settings::BLEMITM, _Settings::BLEPair);
+
+    /** Optional: set the transmit power, default is 3db */
+    NimBLEDevice::setPower(_Settings::BLETXPwr); /** +9db */
+
 
     // Start the service
     service->start();
