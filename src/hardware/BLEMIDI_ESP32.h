@@ -128,7 +128,7 @@ protected:
 };
 
 template <class _Settings>
-bool BLEMIDI_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_ESP32<_Settings>, _Settings> *bleMidiTransport)
+inline bool BLEMIDI_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Transport<class BLEMIDI_ESP32<_Settings>, _Settings> *bleMidiTransport)
 {
     _bleMidiTransport = bleMidiTransport;
 
