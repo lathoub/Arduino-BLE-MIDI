@@ -29,21 +29,79 @@
 #include <BLEMIDI_Transport.h>
 
 #include <hardware/BLEMIDI_Client_ESP32.h>
-//#include <hardware/BLEMIDI_ESP32_NimBLE.h>
-//#include <hardware/BLEMIDI_ESP32.h>
-//#include <hardware/BLEMIDI_ArduinoBLE.h>
 
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 2
 #endif
 
+// For customPasskeyRequest callback format type
+using PasskeyRequestCallback = uint32_t (*)(void);
+
+// This function is called when the server request a passkey (if you need it)
+// If yo need a passkey, you must set the security capabilities and set PasskeyRequestCallback
+
+/*static uint32_t customPasskeyRequest()
+{
+    // FILL WITH YOUR CUSTOM AUTH METHOD CODE or PASSKEY
+    // FOR EXAMPLE:
+    uint32_t passkey = 123456;
+
+    // Serial.println("Client Passkey Request");
+
+    // return the passkey to send to the server
+    return passkey;
+};
+*/
+
 //See DefaultSettingsClient in hardware/BLEMIDI_Client_ESP32.h for more configurable settings
 // If you do not redefine a parameter, it will use the default value for these parameter
-struct CustomBufferSizeSettings : public BLEMIDI_NAMESPACE::DefaultSettingsClient {
-   static const size_t MaxBufferSize = 16;
+struct CustomSettings : public BLEMIDI_NAMESPACE::BLEDefaultSettings
+{
+  //See all options and them explanation in the library.
+  
+  /*
+  ##### BLE DEVICE NAME  #####
+  */
+  //static constexpr char *name = (char*)"BleMidiClient";
+  /*
+  ###### TX POWER #####
+  */
+  //static const int8_t clientTXPwr = 9; // in dBm
+  /*
+  ###### SECURITY #####
+  */
+  //static const uint8_t clientSecurityCapabilities = BLE_HS_IO_NO_INPUT_OUTPUT;
+  //static const bool clientBond = true;
+  //static const bool clientMITM = false;
+  //static const bool clientPair = true;
+  //static constexpr PasskeyRequestCallback userOnPassKeyRequest = customPasskeyRequest;
+  /*
+  ###### BLE COMMUNICATION PARAMS ######
+  */
+  //static const uint16_t commMinInterval = 6;  // 7.5ms
+  //static const uint16_t commMaxInterval = 35; // 40ms
+  //static const uint16_t commLatency = 0;      //
+  //static const uint16_t commTimeOut = 200;    // 2000ms
+  /*
+  ###### BLE FORCE NEW CONNECTION ######
+  */
+  static const bool forceNewConnection = false;
+  /*
+  ###### BLE SUBSCRIPTION: NOTIFICATION & RESPONSE ######
+  */
+  //static const bool notification = true;
+  //static const bool response = true;
+  
+
+  //BLE-MIDI settings (see BLEMIDI_Settings.h and BLE_class for more details)
+  static const size_t MaxBufferSize = 16;
+
+  // MIDI settings (see MIDI_Settings.h)
+  static const int Use1ByteParsing = true;
+  static const bool HandleNullVelocityNoteOnAsNoteOff = true; 
 };
 
-BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-BLE-MIDI", MIDI, CustomBufferSizeSettings); // Connect to a server named "Esp32-BLE-MIDI" and use CustomBufferSizeSettings as settings of client
+BLEMIDI_CREATE_CUSTOM_INSTANCE("Esp32-BLE-MIDI", MIDI, CustomSettings); // Connect to a server named "Esp32-BLE-MIDI" and use CustomSettings as settings of client
 
 //BLEMIDI_CREATE_INSTANCE("",MIDI)                  //Connect to the first server found, using default settings
 //BLEMIDI_CREATE_INSTANCE("f2:c1:d9:36:e7:6b",MIDI) //Connect to a specific BLE address server, using default settings

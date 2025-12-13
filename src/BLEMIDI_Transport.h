@@ -23,7 +23,7 @@ static const char *const CHARACTERISTIC_UUID = "7772e5db-3868-4112-a1a9-f2669d10
 
 #define MIDI_TYPE 0x80
 
-template <class T, class _Settings = DefaultSettings>
+template <class T, class _Settings /*= CommonBLEDefaultSettings*/>
 class BLEMIDI_Transport
 {
 private:
@@ -183,9 +183,7 @@ protected:
 public:
     // callbacks
     void (*_connectedCallback)() = nullptr;
-    void (*_connectedCallbackDeviceName)(char *) = nullptr;
     void (*_disconnectedCallback)() = nullptr;
-    void (*_connectedCallbackDeviceName)(char *) = nullptr;
 
     BLEMIDI_Transport &setName(const char *deviceName)
     {
@@ -199,19 +197,7 @@ public:
         _connectedCallback = fptr;
         return *this;
     }
-    
-    BLEMIDI_Transport &setHandleConnected(void (*fptr)(char*))
-    {
-        _connectedCallbackDeviceName= fptr;
-        return *this;
-    }
 
-    BLEMIDI_Transport &setHandleConnected(void (*fptr)(char*))
-    {
-        _connectedCallbackDeviceName= fptr;
-        return *this;
-    }
-    
     BLEMIDI_Transport &setHandleDisconnected(void (*fptr)())
     {
         _disconnectedCallback = fptr;
@@ -421,11 +407,6 @@ public:
                 return; //end of packet
         }
     }
-};
-
-struct MySettings : public MIDI_NAMESPACE::DefaultSettings
-{
-    static const bool Use1ByteParsing = false;
 };
 
 END_BLEMIDI_NAMESPACE

@@ -10,6 +10,9 @@
 
 // Headers for ESP32 nimBLE
 #include <NimBLEDevice.h>
+#include "transport.h"
+#include "BLEMIDI_Namespace.h"
+#include "BLEMIDI_Settings.h"
 
 BEGIN_BLEMIDI_NAMESPACE
 
@@ -27,7 +30,8 @@ static uint32_t defautlPasskeyRequest()
     return passkey;
 };
 
-struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
+// Dependanced class settings
+struct BLEDefaultSettings : public CommonBLEDefaultSettings
 {
 
     /*
@@ -38,7 +42,7 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      * Set name of ble device (not affect to connection with server)
      * max 16 characters
      */
-    static constexpr char *name = "BleMidiClient";
+    static constexpr char *clientName = (char*)"BleMidiClient";
 
     /*
     ###### TX POWER #####
@@ -46,28 +50,21 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
 
     /**
      * Set power transmision
-     *
-     * ESP_PWR_LVL_N12                // Corresponding to -12dbm    Minimum
-     * ESP_PWR_LVL_N9                 // Corresponding to  -9dbm
-     * ESP_PWR_LVL_N6                 // Corresponding to  -6dbm
-     * ESP_PWR_LVL_N3                 // Corresponding to  -3dbm
-     * ESP_PWR_LVL_N0                 // Corresponding to   0dbm
-     * ESP_PWR_LVL_P3                 // Corresponding to  +3dbm
-     * ESP_PWR_LVL_P6                 // Corresponding to  +6dbm
-     * ESP_PWR_LVL_P9                 // Corresponding to  +9dbm    Maximum
      */
-    static const esp_power_level_t clientTXPwr = ESP_PWR_LVL_P9;
+    static const uint8_t BLETXPwr = 9; //in dBm
 
     /*
     ###### SECURITY #####
     */
 
     /** Set the IO capabilities of the device, each option will trigger a different pairing method.
-     *  BLE_HS_IO_KEYBOARD_ONLY   - Passkey pairing
-     *  BLE_HS_IO_DISPLAY_YESNO   - Numeric comparison pairing
-     *  BLE_HS_IO_NO_INPUT_OUTPUT - DEFAULT setting - just works pairing
+    * * 0x00 BLE_HS_IO_DISPLAY_ONLY         DisplayOnly IO capability
+    * * 0x01 BLE_HS_IO_DISPLAY_YESNO        DisplayYesNo IO capability
+    * * 0x02 BLE_HS_IO_KEYBOARD_ONLY        KeyboardOnly IO capability
+    * * 0x03 BLE_HS_IO_NO_INPUT_OUTPUT      NoInputNoOutput IO capability
+    * * 0x04 BLE_HS_IO_KEYBOARD_DISPLAY     KeyboardDisplay Only IO capability
      */
-    static const uint8_t clientSecurityCapabilities = BLE_HS_IO_NO_INPUT_OUTPUT;
+    static const uint8_t BLESecurityCapabilities = BLE_HS_IO_NO_INPUT_OUTPUT;
 
     /** Set the security method.
      *  bonding
@@ -76,9 +73,9 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
      *
      *  More info in nimBLE lib
      */
-    static const bool clientBond = true;
-    static const bool clientMITM = false;
-    static const bool clientPair = true;
+    static const bool BLEBond = true;
+    static const bool BLEMITM = false;
+    static const bool BLEPair = true;
 
     /**
      * This callback function defines what will be done when server requieres PassKey.
@@ -138,7 +135,7 @@ struct DefaultSettingsClient : public BLEMIDI_NAMESPACE::DefaultSettings
 };
 
 /** Define a class to handle the callbacks when advertisments are received */
-class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
+class AdvertisedDeviceCallbacks : public NimBLEScanCallbacks
 {
 public:
     NimBLEAdvertisedDevice advDevice;
@@ -149,7 +146,7 @@ public:
     std::string nameTarget;
 
 protected:
-    void onResult(NimBLEAdvertisedDevice *advertisedDevice)
+    void onResult(const NimBLEAdvertisedDevice *advertisedDevice)
     {
         if (!enableConnection) // not begin() or end()
         {
@@ -165,7 +162,7 @@ protected:
         }
 
         DEBUGCLIENT("Found MIDI Service");
-        if (!(!specificTarget || (advertisedDevice->getName() == nameTarget.c_str() || advertisedDevice->getAddress() == nameTarget)))
+        if (!(!specificTarget || (advertisedDevice->getName() == nameTarget.c_str() || advertisedDevice->getAddress().toString() == nameTarget)))
         {
             DEBUGCLIENT("Name error");
             return;
@@ -197,7 +194,7 @@ private:
     bool firstTimeSend = true; //First writeValue get sends like Write with reponse for clean security flags. After first time, all messages are send like WriteNoResponse for increase transmision speed.
     char connectedDeviceName[24];
     
-    BLEMIDI_Transport<class BLEMIDI_Client_ESP32> *_bleMidiTransport = nullptr;
+    BLEMIDI_Transport<class BLEMIDI_Client_ESP32, _Settings> *_bleMidiTransport = nullptr;
 
     bool specificTarget = false;
 
@@ -269,12 +266,6 @@ public:
         if (_bleMidiTransport->_connectedCallback)
             _bleMidiTransport->_connectedCallback();
         firstTimeSend = true;
-        
-        if (_bleMidiTransport->_connectedCallbackDeviceName)
-        {
-            sprintf(connectedDeviceName, "%s", myAdvCB.advDevice.getName().c_str());
-            _bleMidiTransport->_connectedCallbackDeviceName(connectedDeviceName);
-        }
     }
 
     void disconnected()
@@ -308,7 +299,7 @@ protected:
     void onConnect(BLEClient *pClient)
     {
         DEBUGCLIENT("##Connected##");
-        // pClient->updateConnParams(_Settings::commMinInterval, _Settings::commMaxInterval, _Settings::commLatency, _Settings::commTimeOut);
+        pClient->updateConnParams(_Settings::commMinInterval, _Settings::commMaxInterval, _Settings::commLatency, _Settings::commTimeOut);
         vTaskDelay(1);
         if (_bluetoothEsp32)
             _bluetoothEsp32->connected();
@@ -382,11 +373,15 @@ bool BLEMIDI_Client_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
     {
         myAdvCB.specificTarget = true;
         myAdvCB.nameTarget = strDeviceName;
+        
     }
+    DEBUGCLIENT("Target Server:");
+    DEBUGCLIENT(myAdvCB.nameTarget.c_str());
 
     static char array[16];
-    memcpy(array, _Settings::name, 16);
+    memcpy(array, _Settings::clientName, 16);
     strDeviceName = array;
+    DEBUGCLIENT("ClientName (this device):");
     DEBUGCLIENT(strDeviceName.c_str());
     NimBLEDevice::init(strDeviceName);
 
@@ -394,11 +389,11 @@ bool BLEMIDI_Client_ESP32<_Settings>::begin(const char *deviceName, BLEMIDI_Tran
     // Core_0 runs here, core_1 runs the BLE stack
     mRxQueue = xQueueCreate(_Settings::MaxBufferSize, sizeof(uint8_t));
 
-    NimBLEDevice::setSecurityIOCap(_Settings::clientSecurityCapabilities); // Attention, it may need a passkey
-    NimBLEDevice::setSecurityAuth(_Settings::clientBond, _Settings::clientMITM, _Settings::clientPair);
+    NimBLEDevice::setSecurityIOCap(_Settings::BLESecurityCapabilities); // Attention, it may need a passkey
+    NimBLEDevice::setSecurityAuth(_Settings::BLEBond, _Settings::BLEMITM, _Settings::BLEPair);
 
     /** Optional: set the transmit power, default is 3db */
-    NimBLEDevice::setPower(_Settings::clientTXPwr); /** +9db */
+    NimBLEDevice::setPower(_Settings::BLETXPwr); /** +9db */
 
     myAdvCB.enableConnection = true;
     scan();
@@ -455,7 +450,7 @@ void BLEMIDI_Client_ESP32<_Settings>::scan()
     NimBLEScan *pBLEScan = BLEDevice::getScan();
     if (!pBLEScan->isScanning())
     {
-        pBLEScan->setAdvertisedDeviceCallbacks(&myAdvCB);
+        pBLEScan->setScanCallbacks(&myAdvCB);
         pBLEScan->setInterval(600);
         pBLEScan->setWindow(500);
         pBLEScan->setActiveScan(true);
@@ -506,7 +501,7 @@ bool BLEMIDI_Client_ESP32<_Settings>::connect()
         }
     }
 
-    if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS)
+    if (NimBLEDevice::getCreatedClientCount() >= NIMBLE_MAX_CONNECTIONS)
     {
         DEBUGCLIENT("Max clients reached - no more connections available");
         return false;
@@ -579,14 +574,14 @@ void scanEndedCB(NimBLEScanResults results)
 
 END_BLEMIDI_NAMESPACE
 
-/*! \brief Create a custom instance for ESP32 named <DeviceName>, and advertise it like "Prefix + <DeviceName> + Subfix"
+/*! \brief Create a custom instance for ESP32 named <DeviceName>.
     It will try to connect to a specific server with equal name or addr than <DeviceName>. If <DeviceName> is "", it will connect to first midi server
  */
 #define BLEMIDI_CREATE_CUSTOM_INSTANCE(DeviceName, Name, _Settings)                                                            \
     BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> BLE##Name(DeviceName); \
-    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings>, BLEMIDI_NAMESPACE::MySettings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> &)BLE##Name);
+    MIDI_NAMESPACE::MidiInterface<BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings>, _Settings> Name((BLEMIDI_NAMESPACE::BLEMIDI_Transport<BLEMIDI_NAMESPACE::BLEMIDI_Client_ESP32<_Settings>, _Settings> &)BLE##Name);
 
-/*! \brief Create an instance for ESP32 named <DeviceName>, and advertise it like "Prefix + <DeviceName> + Subfix"
+/*! \brief Create an instance for ESP32 named <DeviceName>.
     It will try to connect to a specific server with equal name or addr than <DeviceName>. If <DeviceName> is "", it will connect to first midi server
  */
 #define BLEMIDI_CREATE_INSTANCE(DeviceName, Name) \
